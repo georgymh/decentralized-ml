@@ -6,6 +6,7 @@ sys.path.insert(0,parentdir)
 # from multiprocessing import Pool as ThreadPool
 # from multiprocessing import Process
 from collections import deque
+from queue import Queue
 import logging
 import time
 import json
@@ -40,6 +41,13 @@ class DMLScheduler(object):
             DMLScheduler()
         return DMLScheduler.__instance
 
+    def orchestrate_threading(q, i):
+        while True:
+            runner = self.runners[i]
+            job = q.get()
+            self._run_next_job_with_runner(runner, job)
+            q.task_done()
+
     def __init__(self):
         """ Virtually private constructor. """
         if DMLScheduler.__instance != None:
@@ -47,7 +55,7 @@ class DMLScheduler(object):
         else:
             DMLScheduler.__instance = self
         logging.info("Setting up scheduler...")
-        self.queue = deque()
+        #self.queue = deque()
         with open('core/config.json') as f:
             config = json.load(f)
             dataset_path = config["dataset_path"]
@@ -55,7 +63,15 @@ class DMLScheduler(object):
             scheduler_config = config["scheduler_config"]
             run_frequency_mins = scheduler_config["frequency_in_mins"]
             num_processes = scheduler_config["num_processes"]
-        self.current_runner = DMLRunner(dataset_path, runner_config)
+        #self.current_runner = DMLRunner(dataset_path, runner_config)
+        self.queue2 = Queue(maxsize=0)
+        num_threads = 10
+        self.runners = []
+        for i in range(num_threads):
+            worker = Thread(target=orchestrate_threading, args=(queue2,i))
+            worker.setDaemon(True)
+            worker.start()
+            self.runners.append(DMLRunner(dataset_path, runner_config))
         #self.threading_pool = ThreadPool(num_processes)
         self._start_cron(run_frequency_mins)
         logging.info("Scheduler is set up!")
@@ -66,6 +82,7 @@ class DMLScheduler(object):
         self.queue.append(dml_job)
         return self._run_next_job_if_necessary()
 
+    '''
     def _run_next_job_if_necessary(self):
         if not self.current_runner.is_active() and self.queue:
             # self.threading_pool.apply_async(self._run_next_job).get()
@@ -78,13 +95,19 @@ class DMLScheduler(object):
         return_obj = self.current_runner.run_job(current_job)
         logging.info("Job complete!")
         return return_obj
-
+    '''
+    def _run_next_job_with_runner(self, runner, job):
+        logging.info("Running next job...")
+        return_obj = runner.run_job(current_job)
+        logging.info("Job complete!")
+        return return_obj
+    '''
     def _start_cron(self, run_frequency_mins):
         logging.info("Starting cron...")
         schedule.every(run_frequency_mins).minutes.do(self._run_next_job_if_necessary)
         schedule.run_pending()
         logging.info("Cron started!")
-
+    '''
     # def __getstate__(self):
     #     self_dict = self.__dict__.copy()
     #     del self_dict['threading_pool']
