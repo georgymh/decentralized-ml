@@ -34,10 +34,15 @@ def orchestrate_threading(self, q, i, arr):
     while True:
         runner = self.runners[i]
         job = q.get()
+        return_obj = runner.run_job(job)
         print(str(i) + " Start " + str(time.time()))
-        arr.append(self._run_next_job_with_runner(runner, job))
+        arr.append(obj)
         print(str(i) + " Finish " + str(time.time()))
         q.task_done()
+
+        
+
+        
 
 class DMLScheduler(object):
     """
@@ -81,7 +86,6 @@ class DMLScheduler(object):
             num_processes = scheduler_config["num_processes"]
         #self.current_runner = DMLRunner(dataset_path, runner_config)
         self.queue = Queue(maxsize=0)
-        num_threads = 4
         self.runners = []
         workers = []
         for i in range(num_threads):
