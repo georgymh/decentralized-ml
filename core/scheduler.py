@@ -40,7 +40,6 @@ class DMLScheduler(object):
     """
     # Here will be the instance stored.
     __instance = None
-    self.results = []
 
     @staticmethod
     def getInstance():
@@ -50,6 +49,7 @@ class DMLScheduler(object):
         return DMLScheduler.__instance
 
     def __init__(self):
+        self.results = []
         """ Virtually private constructor. """
         if DMLScheduler.__instance != None:
             raise Exception("This class is a singleton!")
