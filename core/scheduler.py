@@ -20,6 +20,13 @@ from core.runner import *
 logging.basicConfig(level=logging.DEBUG,
                     format='[Scheduler] %(asctime)s %(levelname)s %(message)s')
 
+def orchestrate_threading(self, q, i, arr):
+        while True:
+            runner = self.runners[i]
+            job = q.get()
+            arr.append(self._run_next_job_with_runner(runner, job))
+            q.task_done()
+
 class DMLScheduler(object):
     """
     DML Scheduler
@@ -33,6 +40,7 @@ class DMLScheduler(object):
     """
     # Here will be the instance stored.
     __instance = None
+    self.results = []
 
     @staticmethod
     def getInstance():
@@ -40,13 +48,6 @@ class DMLScheduler(object):
         if DMLScheduler.__instance == None:
             DMLScheduler()
         return DMLScheduler.__instance
-
-    def orchestrate_threading(q, i):
-        while True:
-            runner = self.runners[i]
-            job = q.get()
-            self._run_next_job_with_runner(runner, job)
-            q.task_done()
 
     def __init__(self):
         """ Virtually private constructor. """
@@ -68,7 +69,9 @@ class DMLScheduler(object):
         num_threads = 10
         self.runners = []
         for i in range(num_threads):
-            worker = Thread(target=orchestrate_threading, args=(queue2,i))
+            arr = []
+            self.results.append(arr)
+            worker = Thread(target=orchestrate_threading, args=(queue2,i), arr=arr)
             worker.setDaemon(True)
             worker.start()
             self.runners.append(DMLRunner(dataset_path, runner_config))
@@ -80,7 +83,6 @@ class DMLScheduler(object):
         assert type(dml_job) is DMLJob, "Job is not of type DMLJob."
         logging.info("Scheduling job...")
         self.queue.append(dml_job)
-        return self._run_next_job_if_necessary()
 
     '''
     def _run_next_job_if_necessary(self):
