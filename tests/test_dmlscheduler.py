@@ -72,7 +72,7 @@ def make_train_job(model_json, initial_weights, config, hyperparams):
     )
     return train_job
 
-def test_dmlrunner_initialize_job_returns_list_of_nparray():
+def a_test_dmlrunner_initialize_job_returns_list_of_nparray():
     model_json = make_model_json()
     runner = DMLRunner(make_dataset_path(), make_config())
     initialize_job = make_initialize_job(model_json)
@@ -80,7 +80,7 @@ def test_dmlrunner_initialize_job_returns_list_of_nparray():
     assert type(initial_weights) == list
     assert type(initial_weights[0]) == np.ndarray
 
-def test_dmlscheduler_sanity():
+def a_test_dmlscheduler_sanity():
     model_json = make_model_json()
     scheduler = DMLScheduler(num_threads=1)
     initialize_job = make_wait_job(model_json)
@@ -98,7 +98,7 @@ def test_dmlscheduler_sanity():
             assert type(initial_weights) == list
             assert type(initial_weights[0]) == np.ndarray
 
-def test_dmlscheduler_speedup():
+def a_test_dmlscheduler_speedup():
     model_json = make_model_json()
     scheduler = DMLScheduler(test=True)
     initialize_job = make_wait_job(model_json)
