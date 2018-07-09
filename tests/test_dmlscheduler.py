@@ -60,16 +60,18 @@ def make_wait_job(model_json):
 
 
 def test_dmlscheduler_sanity():
-    model_json = make_model_json()
     scheduler = DMLScheduler()
-    initialize_job = make_initialize_job(model_json)
     for _ in range(20):
+        model_json = make_model_json()
+        initialize_job = make_initialize_job(model_json)
         scheduler.add_job(initialize_job)
     time.sleep(1)
     results = scheduler.results
     count = 0
     for thread in results:
         for initial_weights in results:
+            print("hey")
+            print(initial_weights)
             count += 1
             assert type(initial_weights) == list
             assert type(initial_weights[0]) == np.ndarray
@@ -80,17 +82,16 @@ def test_dmlscheduler_speedup():
     scheduler = DMLScheduler()
     initialize_job = make_wait_job(model_json)
     start = time.time()
-    for _ in range(10):
+    for _ in range(40):
         scheduler.add_job(initialize_job)
     can_finish = False
     total_time = 0
+    count = 0
     while not can_finish:
         results = scheduler.results
         for thread in results:
             for initial_weights in results:
                 count += 1
-                assert type(initial_weights) == list
-                assert type(initial_weights[0]) == np.ndarray
         if count >= 20:
             can_finish = True
             total_time = time.time()-start

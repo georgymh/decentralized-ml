@@ -57,6 +57,7 @@ class DMLScheduler(object):
             raise Exception("This class is a singleton!")
         else:
             DMLScheduler.__instance = self
+        DMLScheduler.__instance = self
         logging.info("Setting up scheduler...")
         #self.queue = deque()
         with open('core/config.json') as f:
@@ -67,24 +68,27 @@ class DMLScheduler(object):
             run_frequency_mins = scheduler_config["frequency_in_mins"]
             num_processes = scheduler_config["num_processes"]
         #self.current_runner = DMLRunner(dataset_path, runner_config)
-        self.queue2 = Queue(maxsize=0)
+        self.queue = Queue(maxsize=0)
         num_threads = 10
         self.runners = []
+        workers = []
         for i in range(num_threads):
             arr = []
             self.results.append(arr)
-            worker = Thread(target=orchestrate_threading, args=(queue2,i), arr=arr)
+            worker = Thread(target=orchestrate_threading, args=(self, self.queue,i,arr))
+            workers.append(worker)
+            self.runners.append(DMLRunner(dataset_path, runner_config))
+        for worker in workers:
             worker.setDaemon(True)
             worker.start()
-            self.runners.append(DMLRunner(dataset_path, runner_config))
         #self.threading_pool = ThreadPool(num_processes)
-        self._start_cron(run_frequency_mins)
+        #self._start_cron(run_frequency_mins)
         logging.info("Scheduler is set up!")
 
     def add_job(self, dml_job):
         assert type(dml_job) is DMLJob, "Job is not of type DMLJob."
         logging.info("Scheduling job...")
-        self.queue.append(dml_job)
+        self.queue.put(dml_job)
 
     '''
     def _run_next_job_if_necessary(self):
@@ -102,7 +106,7 @@ class DMLScheduler(object):
     '''
     def _run_next_job_with_runner(self, runner, job):
         logging.info("Running next job...")
-        return_obj = runner.run_job(current_job)
+        return_obj = runner.run_job(job)
         logging.info("Job complete!")
         return return_obj
     '''
