@@ -10,6 +10,7 @@ from core.utils.dmljob          import DMLJob, serialize_job, deserialize_job
 from core.scheduler             import DMLScheduler, orchestrate_threading
 from examples.labelers          import mnist_labeler
 
+print("testing")
 
 def make_dataset_path():
     return 'datasets/mnist'
