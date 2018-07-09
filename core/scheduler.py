@@ -11,7 +11,7 @@ from threading import Thread
 import logging
 import time
 import json
-
+import time
 
 import schedule
 
@@ -22,12 +22,22 @@ from core.runner import *
 logging.basicConfig(level=logging.DEBUG,
                     format='[Scheduler] %(asctime)s %(levelname)s %(message)s')
 
+class DMLRunnerWait(DMLRunner):
+    def __init__(self, dataset_path, config):
+        DMLRunner.__init__(self, dataset_path, config)
+    
+    def run_job(self, job):
+        time.sleep(1)
+
+
 def orchestrate_threading(self, q, i, arr):
-        while True:
-            runner = self.runners[i]
-            job = q.get()
-            arr.append(self._run_next_job_with_runner(runner, job))
-            q.task_done()
+    while True:
+        runner = self.runners[i]
+        job = q.get()
+        print(str(i) + " Start " + str(time.time()))
+        arr.append(self._run_next_job_with_runner(runner, job))
+        print(str(i) + " Finish " + str(time.time()))
+        q.task_done()
 
 class DMLScheduler(object):
     """
@@ -50,13 +60,15 @@ class DMLScheduler(object):
             DMLScheduler()
         return DMLScheduler.__instance
 
-    def __init__(self):
+    def __init__(self, num_threads=10, test=False):
         self.results = []
         """ Virtually private constructor. """
+        '''
         if DMLScheduler.__instance != None:
             raise Exception("This class is a singleton!")
         else:
             DMLScheduler.__instance = self
+        '''
         DMLScheduler.__instance = self
         logging.info("Setting up scheduler...")
         #self.queue = deque()
@@ -69,7 +81,7 @@ class DMLScheduler(object):
             num_processes = scheduler_config["num_processes"]
         #self.current_runner = DMLRunner(dataset_path, runner_config)
         self.queue = Queue(maxsize=0)
-        num_threads = 10
+        num_threads = 4
         self.runners = []
         workers = []
         for i in range(num_threads):
@@ -77,7 +89,10 @@ class DMLScheduler(object):
             self.results.append(arr)
             worker = Thread(target=orchestrate_threading, args=(self, self.queue,i,arr))
             workers.append(worker)
-            self.runners.append(DMLRunner(dataset_path, runner_config))
+            if test:
+                self.runners.append(DMLRunnerWait(dataset_path, runner_config))
+            else:
+                self.runners.append(DMLRunner(dataset_path, runner_config))
         for worker in workers:
             worker.setDaemon(True)
             worker.start()

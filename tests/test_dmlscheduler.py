@@ -11,6 +11,8 @@ from core.scheduler             import DMLScheduler, orchestrate_threading
 from examples.labelers          import mnist_labeler
 
 print("testing")
+    
+
 
 def make_dataset_path():
     return 'datasets/mnist'
@@ -58,44 +60,49 @@ def make_wait_job(model_json):
     time.sleep(1)
     return initialize_job
 
+def make_train_job(model_json, initial_weights, config, hyperparams):
+    train_job = DMLJob(
+        "train",
+        model_json,
+        "keras",
+        config,
+        initial_weights,
+        hyperparams,
+        mnist_labeler
+    )
+    return train_job
 
 def test_dmlscheduler_sanity():
-    scheduler = DMLScheduler()
-    for _ in range(20):
-        model_json = make_model_json()
-        initialize_job = make_initialize_job(model_json)
-        scheduler.add_job(initialize_job)
-    time.sleep(1)
-    results = scheduler.results
-    count = 0
-    for thread in results:
-        for initial_weights in results:
-            print("hey")
-            print(initial_weights)
-            count += 1
-            assert type(initial_weights) == list
-            assert type(initial_weights[0]) == np.ndarray
-    assert count == 20
-
-def test_dmlscheduler_speedup():
     model_json = make_model_json()
-    scheduler = DMLScheduler()
+    scheduler = DMLScheduler(num_threads=3)
     initialize_job = make_wait_job(model_json)
     start = time.time()
-    for _ in range(40):
+    for _ in range(3):
         scheduler.add_job(initialize_job)
     can_finish = False
     total_time = 0
     count = 0
-    while not can_finish:
-        results = scheduler.results
-        for thread in results:
-            for initial_weights in results:
-                count += 1
-        if count >= 20:
-            can_finish = True
-            total_time = time.time()-start
-            if total_time > 5:
-                raise RecursionError()
-    assert total_time < 5
+    queue = scheduler.queue
+    queue.join()
+    results = scheduler.results
+    for thread in results:
+        for initial_weights in results:
+            assert type(initial_weights) == list
+            assert type(initial_weights[0]) == np.ndarray
+
+def test_dmlscheduler_speedup():
+    model_json = make_model_json()
+    scheduler = DMLScheduler(test=True)
+    initialize_job = make_wait_job(model_json)
+    start = time.time()
+    for _ in range(20):
+        scheduler.add_job(initialize_job)
+    can_finish = False
+    total_time = 0
+    count = 0
+    queue = scheduler.queue
+    queue.join()
+    total_time = time.time() - start
+    assert total_time < 10
+
 
