@@ -7,10 +7,11 @@ sys.path.insert(0,parentdir)
 # from multiprocessing import Process
 from collections import deque
 from queue import Queue
+from threading import Thread
 import logging
 import time
 import json
-import Thread
+
 
 import schedule
 
