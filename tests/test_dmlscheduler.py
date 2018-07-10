@@ -60,26 +60,6 @@ def make_wait_job(model_json):
     time.sleep(1)
     return initialize_job
 
-def make_train_job(model_json, initial_weights, config, hyperparams):
-    train_job = DMLJob(
-        "train",
-        model_json,
-        "keras",
-        config,
-        initial_weights,
-        hyperparams,
-        mnist_labeler
-    )
-    return train_job
-
-def test_dmlrunner_initialize_job_returns_list_of_nparray():
-    model_json = make_model_json()
-    runner = DMLRunner(make_dataset_path(), make_config())
-    initialize_job = make_initialize_job(model_json)
-    initial_weights = runner.run_job(initialize_job)
-    assert type(initial_weights) == list
-    assert type(initial_weights[0]) == np.ndarray
-
 def test_dmlscheduler_sanity():
     model_json = make_model_json()
     scheduler = DMLScheduler(num_threads=1)
