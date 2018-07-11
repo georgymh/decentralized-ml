@@ -1,59 +1,24 @@
-# Add the parent directory to the PATH to allow imports.
-import os, sys, inspect
-currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-parentdir = os.path.dirname(currentdir)
-sys.path.insert(0,parentdir)
-# from multiprocessing import Pool as ThreadPool
-# from multiprocessing import Process
-from collections import deque
-from queue import Queue
-from threading import Thread
 import logging
 import time
 import json
-import time
-
+from collections import deque
+import ray
 import schedule
 
 from core.utils.dmljob import DMLJob
-from core.runner import *
+from core.runner_actor import DMLRunnerActor
 
-
+ray.init()
 logging.basicConfig(level=logging.DEBUG,
                     format='[Scheduler] %(asctime)s %(levelname)s %(message)s')
-
-class DMLRunnerWait(DMLRunner):
-    def __init__(self, dataset_path, config):
-        DMLRunner.__init__(self, dataset_path, config)
-    
-    def run_job(self, job):
-        time.sleep(1)
-
-
-def orchestrate_threading(self, q, i, arr):
-    while True:
-        runner = self.runners[i]
-        job = q.get()
-        return_obj = runner.run_job(job)
-        print(str(i) + " Start " + str(time.time()))
-        arr.append(obj)
-        print(str(i) + " Finish " + str(time.time()))
-        q.task_done()
-
-        
-
-        
 
 class DMLScheduler(object):
     """
     DML Scheduler
-
     This class schedules and manages the execution of DMLJobs using the DMLRunner.
     Note: currently runs in a single-threaded environment.
     Note2: only supports one dataset type.
     Note3: Singleton.
-
-
     """
     # Here will be the instance stored.
     __instance = None
@@ -65,76 +30,69 @@ class DMLScheduler(object):
             DMLScheduler()
         return DMLScheduler.__instance
 
-    def __init__(self, num_threads=10, test=False):
-        self.results = []
+    def __init__(self, num_runners=5):
         """ Virtually private constructor. """
-        '''
+
         if DMLScheduler.__instance != None:
             raise Exception("This class is a singleton!")
         else:
             DMLScheduler.__instance = self
-        '''
-        DMLScheduler.__instance = self
         logging.info("Setting up scheduler...")
-        #self.queue = deque()
+        self.queue = deque()
+        self.object_ids = [None]*4
+        self.processed = []
         with open('core/config.json') as f:
             config = json.load(f)
-            dataset_path = config["dataset_path"]
-            runner_config = config["runner_config"]
+            self.dataset_path = config["dataset_path"]
+            self.runner_config = config["runner_config"]
             scheduler_config = config["scheduler_config"]
             run_frequency_mins = scheduler_config["frequency_in_mins"]
             num_processes = scheduler_config["num_processes"]
-        #self.current_runner = DMLRunner(dataset_path, runner_config)
-        self.queue = Queue(maxsize=0)
-        self.runners = []
-        workers = []
-        for i in range(num_threads):
-            arr = []
-            self.results.append(arr)
-            worker = Thread(target=orchestrate_threading, args=(self, self.queue,i,arr))
-            workers.append(worker)
-            if test:
-                self.runners.append(DMLRunnerWait(dataset_path, runner_config))
-            else:
-                self.runners.append(DMLRunner(dataset_path, runner_config))
-        for worker in workers:
-            worker.setDaemon(True)
-            worker.start()
+        self.runners = [self.create_runner() for _ in range(4)]
         #self.threading_pool = ThreadPool(num_processes)
-        #self._start_cron(run_frequency_mins)
+        self._start_cron(run_frequency_mins)
         logging.info("Scheduler is set up!")
 
     def add_job(self, dml_job):
         assert type(dml_job) is DMLJob, "Job is not of type DMLJob."
         logging.info("Scheduling job...")
-        self.queue.put(dml_job)
+        self.queue.append(dml_job) 
 
-    '''
-    def _run_next_job_if_necessary(self):
-        if not self.current_runner.is_active() and self.queue:
+    def create_runner(self):
+        return DMLRunnerActor.remote(self.dataset_path, self.runner_config)
+
+    def _runners_run_next_jobs(self):
+        for i in range(4):
+            if not ray.get(self.runners[i].is_active.remote()):
+                if self.object_ids[i]:
+                    self.processed.append(ray.get(self.object_ids[i]))
+                    self.object_ids[i] = None
+                if self.queue:
+                    self.object_ids[i] = self.runners[i].run_job.remote(self.queue.popleft())
+        
+    def _run_next_job_if_necessary(self, runner):
+        if not ray.get(runner.is_active().remote()) and self.queue:
             # self.threading_pool.apply_async(self._run_next_job).get()
             # Process(target=self._run_next_job).start()
-            return self._run_next_job()
+            return self._run_next_job(runner)
 
-    def _run_next_job(self):
+    def _run_next_job(self, runner):
         logging.info("Running next job...")
         current_job = self.queue.popleft()
-        return_obj = self.current_runner.run_job(current_job)
+        return_obj = ray.get(runner.run_job(current_job).remote())
         logging.info("Job complete!")
         return return_obj
-    '''
-    def _run_next_job_with_runner(self, runner, job):
-        logging.info("Running next job...")
-        return_obj = runner.run_job(job)
-        logging.info("Job complete!")
-        return return_obj
-    '''
+
     def _start_cron(self, run_frequency_mins):
         logging.info("Starting cron...")
-        schedule.every(run_frequency_mins).minutes.do(self._run_next_job_if_necessary)
+        schedule.every(run_frequency_mins).minutes.do(self._runners_run_next_jobs)
         schedule.run_pending()
         logging.info("Cron started!")
-    '''
+
+    def reset(self):
+        self.queue = deque()
+        self.processed = []
+
     # def __getstate__(self):
     #     self_dict = self.__dict__.copy()
     #     del self_dict['threading_pool']
