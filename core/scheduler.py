@@ -33,7 +33,7 @@ class DMLScheduler(object):
     #Default number of runners that are running at a time is 4
     def __init__(self, num_runners=4):
         """ Virtually private constructor. """
-
+        self.num_runners = num_runners
         if DMLScheduler.__instance != None:
             raise Exception("This class is a singleton!")
         else:
@@ -49,7 +49,7 @@ class DMLScheduler(object):
             scheduler_config = config["scheduler_config"]
             run_frequency_mins = scheduler_config["frequency_in_mins"]
             num_processes = scheduler_config["num_processes"]
-        self.runners = [self.create_runner() for _ in range(num_runners)]
+        self.runners = [self.create_runner() for _ in range(self.num_runners)]
         #self.threading_pool = ThreadPool(num_processes)
         self._start_cron(run_frequency_mins)
         logging.info("Scheduler is set up!")
@@ -66,7 +66,7 @@ class DMLScheduler(object):
     # run the next job on the queue asynchronously of the others and collect 
     # the result of the job that was running before (if applicable)
     def _runners_run_next_jobs(self):
-        for i in range(4):
+        for i in range(self.num_runners):
             if not ray.get(self.runners[i].is_active.remote()):
                 if self.object_ids[i]:
                     self.processed.append(ray.get(self.object_ids[i]))

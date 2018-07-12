@@ -87,7 +87,7 @@ def test_dmlscheduler_speedup_naive():
     fast = time.time() - start
     print(slow)
     print(fast)
-    assert fast*2 < slow
+    assert fast*1.5 < slow
     scheduler.reset()
 
 
