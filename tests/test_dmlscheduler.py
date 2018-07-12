@@ -102,7 +102,7 @@ def test_dmlscheduler_sanity():
     assert type(initial_weights[0]) == np.ndarray
     scheduler.reset()
 
-def test_dmlscheduler_speedup():
+def test_dmlscheduler_speedup_naive():
     scheduler.reset()
     for _ in range(20):
         model_json = make_model_json()
@@ -113,7 +113,7 @@ def test_dmlscheduler_speedup():
         scheduler._runners_run_next_jobs()
     total_time = time.time() - start
     print(total_time)
-    assert total_time < 2
+    assert total_time < 2.25
     scheduler.reset()
 
 
