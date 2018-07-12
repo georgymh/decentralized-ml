@@ -14,8 +14,6 @@ from examples.labelers          import mnist_labeler
 from queue import Queue
 print("testing")
 
-logging.basicConfig(level=logging.DEBUG,
-                    format='[Runner] %(asctime)s %(levelname)s %(message)s')
 
 import ray
 
@@ -104,16 +102,28 @@ def test_dmlscheduler_sanity():
 
 def test_dmlscheduler_speedup_naive():
     scheduler.reset()
-    for _ in range(20):
+    slow = 0
+    for _ in range(10):
+        model_json = make_model_json()
+        initialize_job = make_initialize_job(model_json)
+        scheduler.add_job(initialize_job)
+        start = time.time()
+        while len(scheduler.processed) < 1:
+            scheduler._runners_run_next_jobs()
+        slow += time.time() - start
+        scheduler.reset()
+
+    for _ in range(10):
         model_json = make_model_json()
         initialize_job = make_initialize_job(model_json)
         scheduler.add_job(initialize_job)
     start = time.time()
-    while len(scheduler.processed) < 20:
+    while len(scheduler.processed) < 10:
         scheduler._runners_run_next_jobs()
-    total_time = time.time() - start
-    print(total_time)
-    assert total_time < 2.25
+    fast = time.time() - start
+    print(slow)
+    print(fast)
+    assert fast*2 < slow
     scheduler.reset()
 
 
