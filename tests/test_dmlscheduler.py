@@ -37,16 +37,6 @@ def make_model_json():
     return model_json
 
 
-def make_hyperparams():
-    hyperparams = {
-        'averaging_type': 'data_size',
-        'batch_size': 50,
-        'epochs': 1,
-        'split': 0.001,
-    }
-    return hyperparams
-
-
 def make_initialize_job(model_json):
     initialize_job = DMLJob(
         "initialize",
@@ -55,37 +45,9 @@ def make_initialize_job(model_json):
     )
     return initialize_job
 
-def make_train_job(model_json, initial_weights, config, hyperparams):
-    train_job = DMLJob(
-        "train",
-        model_json,
-        "keras",
-        config,
-        initial_weights,
-        hyperparams,
-        mnist_labeler
-    )
-    return train_job
-
 scheduler = DMLScheduler()
 
-def test_dmlrunner_initialize_job_returns_list_of_nparray():
-    model_json = make_model_json()
-    runner = DMLRunner(make_dataset_path(), make_config())
-    initialize_job = make_initialize_job(model_json)
-    initial_weights = runner.run_job(initialize_job)
-    assert type(initial_weights) == list
-    assert type(initial_weights[0]) == np.ndarray
-
-def ahh_test_2():
-    model_json = make_model_json()
-    runner = DMLRunnerActor.remote(make_dataset_path(), make_config())
-    initialize_job = make_initialize_job(model_json)
-    object_id = runner.run_job.remote(initialize_job)
-    initial_weights = ray.get(object_id)
-    assert type(initial_weights) == list
-    assert type(initial_weights[0]) == np.ndarray
-
+#Check that the scheduling/running functionality is maintained.
 def test_dmlscheduler_sanity():
     model_json = make_model_json()
     initialize_job = make_initialize_job(model_json)
@@ -100,6 +62,8 @@ def test_dmlscheduler_sanity():
     assert type(initial_weights[0]) == np.ndarray
     scheduler.reset()
 
+#Check that running 10 jobs with Ray takes at most half the 
+# time to run them serially (i.e. there is a speedup)
 def test_dmlscheduler_speedup_naive():
     scheduler.reset()
     slow = 0

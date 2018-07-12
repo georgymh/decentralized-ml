@@ -16,7 +16,7 @@ class DMLScheduler(object):
     """
     DML Scheduler
     This class schedules and manages the execution of DMLJobs using the DMLRunner.
-    Note: currently runs in a single-threaded environment.
+    Note: now supports a multithreaded environment using Ray.
     Note2: only supports one dataset type.
     Note3: Singleton.
     """
@@ -30,7 +30,8 @@ class DMLScheduler(object):
             DMLScheduler()
         return DMLScheduler.__instance
 
-    def __init__(self, num_runners=5):
+    #Default number of runners that are running at a time is 4
+    def __init__(self, num_runners=4):
         """ Virtually private constructor. """
 
         if DMLScheduler.__instance != None:
@@ -48,7 +49,7 @@ class DMLScheduler(object):
             scheduler_config = config["scheduler_config"]
             run_frequency_mins = scheduler_config["frequency_in_mins"]
             num_processes = scheduler_config["num_processes"]
-        self.runners = [self.create_runner() for _ in range(4)]
+        self.runners = [self.create_runner() for _ in range(num_runners)]
         #self.threading_pool = ThreadPool(num_processes)
         self._start_cron(run_frequency_mins)
         logging.info("Scheduler is set up!")
@@ -61,6 +62,9 @@ class DMLScheduler(object):
     def create_runner(self):
         return DMLRunnerActor.remote(self.dataset_path, self.runner_config)
 
+    #Check each job to see if it has a job running. If not, have the runner
+    # run the next job on the queue asynchronously of the others and collect 
+    # the result of the job that was running before (if applicable)
     def _runners_run_next_jobs(self):
         for i in range(4):
             if not ray.get(self.runners[i].is_active.remote()):
@@ -69,19 +73,6 @@ class DMLScheduler(object):
                     self.object_ids[i] = None
                 if self.queue:
                     self.object_ids[i] = self.runners[i].run_job.remote(self.queue.popleft())
-        
-    def _run_next_job_if_necessary(self, runner):
-        if not ray.get(runner.is_active().remote()) and self.queue:
-            # self.threading_pool.apply_async(self._run_next_job).get()
-            # Process(target=self._run_next_job).start()
-            return self._run_next_job(runner)
-
-    def _run_next_job(self, runner):
-        logging.info("Running next job...")
-        current_job = self.queue.popleft()
-        return_obj = ray.get(runner.run_job(current_job).remote())
-        logging.info("Job complete!")
-        return return_obj
 
     def _start_cron(self, run_frequency_mins):
         logging.info("Starting cron...")
@@ -89,6 +80,7 @@ class DMLScheduler(object):
         schedule.run_pending()
         logging.info("Cron started!")
 
+    #scheduler is a singleton, so need a way "start over"
     def reset(self):
         self.queue = deque()
         self.processed = []
