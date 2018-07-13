@@ -43,7 +43,6 @@ class DMLRunner(object):
 
         If the runner is already executing a job, it silently does nothing.
         """
-        
         assert job.job_type in ['train', 'validate', 'initialize'], \
             'DMLJob type ({0}) is not valid'.format(job.job_type)
         if self.is_active(): return
