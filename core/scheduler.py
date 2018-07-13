@@ -3,24 +3,24 @@ import time
 import json
 from collections import deque
 
+import ray
 import schedule
 
 from core.utils.dmljob import DMLJob
-from core.runner import DMLRunner
+from core.runner_actor import DMLRunnerActor
 
+
+ray.init()
 logging.basicConfig(level=logging.DEBUG,
                     format='[Scheduler] %(asctime)s %(levelname)s %(message)s')
 
 class DMLScheduler(object):
     """
     DML Scheduler
-
     This class schedules and manages the execution of DMLJobs using the DMLRunner.
-    Note: currently runs in a single-threaded environment.
+    Note: now supports a multithreaded environment using Ray.
     Note2: only supports one dataset type.
     Note3: Singleton.
-
-
     """
     # Here will be the instance stored.
     __instance = None
@@ -32,22 +32,26 @@ class DMLScheduler(object):
             DMLScheduler()
         return DMLScheduler.__instance
 
-    def __init__(self):
+    #Default number of runners that are running at a time is 4
+    def __init__(self, num_runners=4):
         """ Virtually private constructor. """
+        self.num_runners = num_runners
         if DMLScheduler.__instance != None:
             raise Exception("This class is a singleton!")
         else:
             DMLScheduler.__instance = self
         logging.info("Setting up scheduler...")
         self.queue = deque()
+        self.object_ids = [None]*4
+        self.processed = []
         with open('core/config.json') as f:
             config = json.load(f)
-            dataset_path = config["dataset_path"]
-            runner_config = config["runner_config"]
+            self.dataset_path = config["dataset_path"]
+            self.runner_config = config["runner_config"]
             scheduler_config = config["scheduler_config"]
             run_frequency_mins = scheduler_config["frequency_in_mins"]
             num_processes = scheduler_config["num_processes"]
-        self.current_runner = DMLRunner(dataset_path, runner_config)
+        self.runners = [self.create_runner() for _ in range(self.num_runners)]
         #self.threading_pool = ThreadPool(num_processes)
         self._start_cron(run_frequency_mins)
         logging.info("Scheduler is set up!")
@@ -55,27 +59,33 @@ class DMLScheduler(object):
     def add_job(self, dml_job):
         assert type(dml_job) is DMLJob, "Job is not of type DMLJob."
         logging.info("Scheduling job...")
-        self.queue.append(dml_job)
-        return self._run_next_job_if_necessary()
+        self.queue.append(dml_job) 
 
-    def _run_next_job_if_necessary(self):
-        if not self.current_runner.is_active() and self.queue:
-            # self.threading_pool.apply_async(self._run_next_job).get()
-            # Process(target=self._run_next_job).start()
-            return self._run_next_job()
+    def create_runner(self):
+        return DMLRunnerActor.remote(self.dataset_path, self.runner_config)
 
-    def _run_next_job(self):
-        logging.info("Running next job...")
-        current_job = self.queue.popleft()
-        return_obj = self.current_runner.run_job(current_job)
-        logging.info("Job complete!")
-        return return_obj
+    #Check each job to see if it has a job running. If not, have the runner
+    # run the next job on the queue asynchronously of the others and collect 
+    # the result of the job that was running before (if applicable)
+    def _runners_run_next_jobs(self):
+        for i in range(self.num_runners):
+            if not ray.get(self.runners[i].is_active.remote()):
+                if self.object_ids[i]:
+                    self.processed.append(ray.get(self.object_ids[i]))
+                    self.object_ids[i] = None
+                if self.queue:
+                    self.object_ids[i] = self.runners[i].run_job.remote(self.queue.popleft())
 
     def _start_cron(self, run_frequency_mins):
         logging.info("Starting cron...")
-        schedule.every(run_frequency_mins).minutes.do(self._run_next_job_if_necessary)
+        schedule.every(run_frequency_mins).minutes.do(self._runners_run_next_jobs)
         schedule.run_pending()
         logging.info("Cron started!")
+
+    #scheduler is a singleton, so need a way "start over"
+    def reset(self):
+        self.queue = deque()
+        self.processed = []
 
     # def __getstate__(self):
     #     self_dict = self.__dict__.copy()
