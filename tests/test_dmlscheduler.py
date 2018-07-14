@@ -1,7 +1,6 @@
 import pytest
 import time
 import tests.context
-
 import logging
 import numpy as np
 from custom.keras               import get_optimizer
@@ -12,18 +11,7 @@ from core.utils.dmljob          import DMLJob, serialize_job, deserialize_job
 from core.scheduler             import DMLScheduler
 from examples.labelers          import mnist_labeler
 from queue import Queue
-print("testing")
-
-
 import ray
-
-
-def make_dataset_path():
-    return 'datasets/mnist'
-
-
-def make_config():
-    return {}
 
 
 def make_model_json():
@@ -47,8 +35,9 @@ def make_initialize_job(model_json):
 
 scheduler = DMLScheduler()
 
-#Check that the scheduling/running functionality is maintained.
+
 def test_dmlscheduler_sanity():
+    """ Check that the scheduling/running functionality is maintained. """
     model_json = make_model_json()
     initialize_job = make_initialize_job(model_json)
     scheduler.add_job(initialize_job)
@@ -62,9 +51,10 @@ def test_dmlscheduler_sanity():
     assert type(initial_weights[0]) == np.ndarray
     scheduler.reset()
 
-#Check that running 10 jobs with Ray takes at most half the 
-# time to run them serially (i.e. there is a speedup)
+
 def test_dmlscheduler_speedup_naive():
+    """ Check that running 10 jobs with Ray takes at most half the time to run them 
+        serially (i.e. there is a speedup) """
     scheduler.reset()
     slow = 0
     for _ in range(10):

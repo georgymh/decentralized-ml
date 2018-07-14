@@ -8,6 +8,7 @@ import schedule
 from core.utils.dmljob import DMLJob
 from core.runner_actor import DMLRunnerActor
 
+
 ray.init()
 logging.basicConfig(level=logging.DEBUG,
                     format='[Scheduler] %(asctime)s %(levelname)s %(message)s')
@@ -55,17 +56,20 @@ class DMLScheduler(object):
         logging.info("Scheduler is set up!")
 
     def add_job(self, dml_job):
+        """ Add a job to the queue"""
         assert type(dml_job) is DMLJob, "Job is not of type DMLJob."
         logging.info("Scheduling job...")
         self.queue.append(dml_job) 
 
     def create_runner(self):
+        """ Creates new runner. """
         return DMLRunnerActor.remote(self.dataset_path, self.runner_config)
 
-    #Check each job to see if it has a job running. If not, have the runner
-    # run the next job on the queue asynchronously of the others and collect 
-    # the result of the job that was running before (if applicable)
+    #
     def _runners_run_next_jobs(self):
+        """ Check each job to see if it has a job running. If not, have the runner run the 
+        next job on the queue asynchronously of the others and collect the result of the job
+        that was running before (if applicable) """
         for i in range(self.num_runners):
             if not ray.get(self.runners[i].is_active.remote()):
                 if self.object_ids[i]:
@@ -75,13 +79,15 @@ class DMLScheduler(object):
                     self.object_ids[i] = self.runners[i].run_job.remote(self.queue.popleft())
 
     def _start_cron(self, run_frequency_mins):
+        """ CRON job to run next jobs on runners, if applicable. """
         logging.info("Starting cron...")
         schedule.every(run_frequency_mins).minutes.do(self._runners_run_next_jobs)
         schedule.run_pending()
         logging.info("Cron started!")
 
-    #scheduler is a singleton, so need a way "start over"
+    #
     def reset(self):
+        """scheduler is a singleton, so need to get a new instance inplace """
         self.queue = deque()
         self.processed = []
 

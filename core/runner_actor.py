@@ -16,6 +16,7 @@ from data.iterators import create_test_dataset_iterator
 from core.utils.keras import train_keras_model, validate_keras_model
 from core.utils.keras import serialize_weights
 
+
 logging.basicConfig(level=logging.DEBUG,
                     format='[Runner] %(asctime)s %(levelname)s %(message)s')
 
@@ -23,14 +24,6 @@ logging.basicConfig(level=logging.DEBUG,
 class DMLRunnerActor(DMLRunner):
     """
     DML Runner Actor
-
-    NOTE: This is a wrapper around DMLRunner so that testing on DMLRunner can be 
-    independent of interaction with Ray
-
-    NOTE 2: Please read https://ray.readthedocs.io/en/latest/actors.html. This 
-    class serves as an actor, where methods of each instance are run in parallel 
-    across instances. This is so that runners can run jobs independently of each
-    other.
 
     This class manages the training and validation of a DML job. It trains or
     validate a specified machine learning model on a local dataset. An instance
