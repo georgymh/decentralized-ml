@@ -31,7 +31,6 @@ class DMLScheduler(object):
 
     def __init__(self):
         """ Virtually private constructor. """
-        self.num_runners = num_runners
         if DMLScheduler.__instance != None:
             raise Exception("This class is a singleton!")
         else:
@@ -44,12 +43,12 @@ class DMLScheduler(object):
             self.dataset_path = config["dataset_path"]
             self.runner_config = config["runner_config"]
             scheduler_config = config["scheduler_config"]
-            self.frequency_in_mins = scheduler_config["frequency_in_mins"] 
-            num_processes = scheduler_config["num_processes"]
-        self.pool = Pool(processes = num_processes)
+            self.frequency_in_mins = scheduler_config["frequency_in_mins"]
+            self.num_runners = scheduler_config["num_processes"]
+        self.pool = Pool(processes=self.num_runners)
         self.runners = [self.create_runner() for _ in range(self.num_runners)]
-        self.current_jobs = [None]*num_processes
-        self.results = [None]*num_processes
+        self.current_jobs = [None]*self.num_runners
+        self.results = [None]*self.num_runners
         self.event = Event()
         logging.info("Scheduler is set up!")
 
@@ -57,16 +56,16 @@ class DMLScheduler(object):
         """ Add a job to the queue"""
         assert type(dml_job) is DMLJob, "Job is not of type DMLJob."
         logging.info("Scheduling job...")
-        self.queue.append(dml_job) 
+        self.queue.append(dml_job)
 
     def create_runner(self):
         """ Creates new runner. """
         return DMLRunner(self.dataset_path, self.runner_config)
-            
+
     def _runners_run_next_jobs(self):
-        """ Check each job to see if it has a job running. If not, have the runner run the 
+        """ Check each job to see if it has a job running. If not, have the runner run the
         next job on the queue asynchronously of the others and collect the result of the job
-        that was running before (if applicable) 
+        that was running before (if applicable)
         """
         for i in range(self.num_runners):
             runner = self.runners[i]
@@ -74,7 +73,7 @@ class DMLScheduler(object):
                 if self.current_jobs[i]:
                     self.processed.append(self.current_jobs[i].get())
                     self.current_jobs[i] = None
-                if self.queue:    
+                if self.queue:
                     self.current_jobs[i] = self.pool.apply_async(runner.run_job, (self.queue.popleft(),))
 
     def _runners_run_next_jobs_as_event(self, period):
@@ -91,7 +90,7 @@ class DMLScheduler(object):
         self._runners_run_next_jobs_as_event(period)
         logging.info("Cron started!")
 
-    
+
     def reset(self):
         """ Scheduler is a singleton, so need to get a new instance inplace """
         logging.info("Resetting scheduler...")
