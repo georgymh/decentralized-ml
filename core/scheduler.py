@@ -29,7 +29,7 @@ class DMLScheduler(object):
             DMLScheduler()
         return DMLScheduler.__instance
 
-    def __init__(self, num_runners=4):
+    def __init__(self):
         """ Virtually private constructor. """
         self.num_runners = num_runners
         if DMLScheduler.__instance != None:
@@ -38,8 +38,6 @@ class DMLScheduler(object):
             DMLScheduler.__instance = self
         logging.info("Setting up scheduler...")
         self.queue = deque()
-        self.current_jobs = [None]*4
-        self.results = [None]*4
         self.processed = []
         with open('core/config.json') as f:
             config = json.load(f)
@@ -50,6 +48,8 @@ class DMLScheduler(object):
             num_processes = scheduler_config["num_processes"]
         self.pool = Pool(processes = num_processes)
         self.runners = [self.create_runner() for _ in range(self.num_runners)]
+        self.current_jobs = [None]*num_processes
+        self.results = [None]*num_processes
         self.event = Event()
         logging.info("Scheduler is set up!")
 
