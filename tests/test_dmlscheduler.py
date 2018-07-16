@@ -110,14 +110,15 @@ def test_dmlscheduler_cron():
         model_json = make_model_json()
         initialize_job = make_initialize_job(model_json)
         scheduler.add_job(initialize_job)
-    scheduler._start_cron()
+    scheduler._start_cron(period = 0.05)
     time.sleep(5)
+    scheduler.stop_scheduling()
     assert len(scheduler.processed) == 3
     while scheduler.processed:
         initial_weights = scheduler.processed.pop(0)
         assert type(initial_weights) == list
         assert type(initial_weights[0]) == np.ndarray 
-    scheduler.stop_scheduling()
+    
 
 
 

@@ -29,7 +29,7 @@ class DMLScheduler(object):
             DMLScheduler()
         return DMLScheduler.__instance
 
-    def __init__(self, num_runners=4, period = 0.05):
+    def __init__(self, num_runners=4):
         """ Virtually private constructor. """
         self.num_runners = num_runners
         if DMLScheduler.__instance != None:
@@ -46,10 +46,9 @@ class DMLScheduler(object):
             self.dataset_path = config["dataset_path"]
             self.runner_config = config["runner_config"]
             scheduler_config = config["scheduler_config"]
-            run_frequency_mins = scheduler_config["frequency_in_mins"]
+            self.frequency_in_mins = scheduler_config["frequency_in_mins"] 
             num_processes = scheduler_config["num_processes"]
-        self.period = period
-        self.pool = Pool(processes = 4)
+        self.pool = Pool(processes = num_processes)
         self.runners = [self.create_runner() for _ in range(self.num_runners)]
         self.event = Event()
         logging.info("Scheduler is set up!")
@@ -78,16 +77,18 @@ class DMLScheduler(object):
                 if self.queue:    
                     self.current_jobs[i] = self.pool.apply_async(runner.run_job, (self.queue.popleft(),))
 
-    def _runners_run_next_jobs_as_event(self, event):
+    def _runners_run_next_jobs_as_event(self, period):
         """ Trigger above method every period"""
         self._runners_run_next_jobs()
-        if not event.is_set():
-            Timer(self.period, self._runners_run_next_jobs_as_event, [event]).start()
+        if not self.event.is_set():
+            Timer(period*60, self._runners_run_next_jobs_as_event, [period]).start()
 
-    def _start_cron(self):
+    def _start_cron(self, period=None):
         """ CRON job to run next jobs on runners, if applicable. Runs asynchronously."""
+        if not period:
+            period = self.frequency_in_mins
         logging.info("Starting cron...")
-        self._runners_run_next_jobs_as_event(self.event)
+        self._runners_run_next_jobs_as_event(period)
         logging.info("Cron started!")
 
     
