@@ -100,7 +100,7 @@ class DMLScheduler(object):
         self.event = Event()
         logging.info("Scheduler resetted!")
 
-    def stop_scheduling(self):
+    def _stop_cron(self):
         """ Tell the scheduler to stop scheduling jobs """
         logging.info("Stopping cron...")
         self.event.set()

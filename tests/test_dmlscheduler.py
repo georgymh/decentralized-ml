@@ -112,7 +112,7 @@ def test_dmlscheduler_cron():
         scheduler.add_job(initialize_job)
     scheduler._start_cron(period = 0.05)
     time.sleep(5)
-    scheduler.stop_scheduling()
+    scheduler._stop_cron()
     assert len(scheduler.processed) == 3
     while scheduler.processed:
         initial_weights = scheduler.processed.pop(0)
