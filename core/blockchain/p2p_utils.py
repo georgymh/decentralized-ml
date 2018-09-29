@@ -14,9 +14,9 @@ class Node(object):
         except:
             print("Peer-to-Peer sockets not started.")
 
-    def set_val(self, key, value) -> None:
+    def set_val(self, key: str, value) -> None:
         self.loop.run_until_complete(self.node.set(key, value))
 
-    def get_val(self, key):
+    def get_val(self, key: str):
         retval = self.loop.run_until_complete(self.node.get(key))
         return retval
