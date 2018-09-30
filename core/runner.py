@@ -10,6 +10,7 @@ from data.iterators import create_test_dataset_iterator
 from core.utils.keras import train_keras_model, validate_keras_model
 from core.utils.keras import serialize_weights
 from core.configuration import ConfigurationManager
+from core.blockchain.ipfs_utils import IPFS
 
 
 logging.basicConfig(level=logging.DEBUG,
@@ -40,6 +41,7 @@ class DMLRunner(object):
         self.dataset_path = config.get("GENERAL", "dataset_path")
         self.config = dict(config.items("RUNNER"))
         self.data_count = count_datapoints(self.dataset_path)
+        self.ipfs_client = IPFS()
 
     def run_job(self, job):
         """
@@ -50,6 +52,7 @@ class DMLRunner(object):
         assert job.job_type in ['train', 'validate', 'initialize'], \
             'DMLJob type ({0}) is not valid'.format(job.job_type)
         logging.info("Running job (type: {0})...".format(job.job_type))
+
         try:
             if job.job_type == 'train':
                     new_weights, omega, train_stats = self._train(
@@ -98,6 +101,11 @@ class DMLRunner(object):
                     "return_obj": initial_weights,
                     "successful": True
                 }
+            elif job.job_type == 'upload':
+                weights_in_bytes = serialize_weights(initial_weights)
+                return_obj = self.ipfs_client.upload(weights_in_bytes)
+            elif job.job_type == 'download':
+                return_obj = self.ipfs_client.download(job.blockchain_addr)
         except Exception as e:
             results = {
                 "successful": False,

@@ -23,6 +23,12 @@ def make_dataset_path():
     return 'datasets/mnist'
 
 
+def make_blockchain_addr():
+    # TODO: switch to sample hash in config
+    ipfs_hash = 'QmWWQSuPMS6aXCbZKpEjPHPUZN2NjB3YrhJTHsV4X3vb2t'
+    return base58.b58encode(b'\x12 ' + ipfs_hash)
+
+
 def make_config():
     return {}
 
@@ -83,6 +89,22 @@ def make_validate_job(model_json, new_weights, config, hyperparams):
     return validate_job
 
 
+def make_upload_job(new_weights):
+    upload_job = DMLJob(
+        "upload",
+        weights=new_weights
+    )
+    return upload_job
+
+
+def make_download_job(block_addr):
+    download_job = DMLJob(
+        "download",
+        block_addr=block_addr
+    )
+    return download_job
+
+
 def test_dmlrunner_initialize_job_returns_list_of_nparray(config_manager):
     model_json = make_model_json()
     runner = DMLRunner(config_manager)
@@ -120,3 +142,26 @@ def test_dmlrunner_validate_job_returns_stats(config_manager):
     validate_job = make_validate_job(model_json, new_weights, config, hyperparams)
     val_stats = runner.run_job(validate_job)['return_obj']
     assert type(val_stats) == dict
+
+def test_dmlrunner_upload_job_returns_(config_manager):
+    model_json = make_model_json()
+    hyperparams = make_hyperparams()
+    config = make_config()
+    runner = DMLRunner(config_manager)
+    initialize_job = make_initialize_job(make_model_json())
+    initial_weights = runner.run_job(initialize_job)
+
+    upload_job = make_upload_job(initial_weights)
+    blockchain_addr = runner.run_job(train_job)
+
+    assert type(blockchain_addr) == str
+
+def test_dmlrunner_download_job_returns_(config_manager):
+    runner = DMLRunner(config_manager)
+    download_job = make_download_job(initial_weights)
+    blockchain_content = runner.run_job(train_job)
+
+    # TODO: switch to proper content stored
+    assert type(blockchain_content) == str
+    # assert type(blockchain_content) == list
+    # assert type(blockchain_content[0]) == np.ndarray
