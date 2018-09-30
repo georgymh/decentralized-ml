@@ -2,7 +2,8 @@ import asyncio
 from kademlia.network import Server
 
 
-CONFIG = json.load(p2p_config)
+with open("./core/blockchain/p2p_config.json", "r") as read_file:
+    CONFIG = json.load(read_file)
 
 class Node(object):
     def __init__(self):
@@ -10,7 +11,7 @@ class Node(object):
         self.loop = asyncio.get_event_loop()
         try:
             self.node.listen()
-            self.loop.run_until_complete(self.node.bootstrap([(CONFIG.host, CONFIG.port)]))
+            self.loop.run_until_complete(self.node.bootstrap([(CONFIG['host'], CONFIG['port'])]))
         except:
             print("Peer-to-Peer sockets not started.")
 

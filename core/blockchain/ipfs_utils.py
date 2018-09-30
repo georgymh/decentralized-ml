@@ -4,13 +4,12 @@ import json
 import os
 from keras.models import load_model, model_from_json
 
-import ipfs_config
 
-
-CONFIG = json.load(ipfs_config)
+with open("./core/blockchain/ipfs_config.json", "r") as read_file:
+    CONFIG = json.load(read_file)
 
 class IPFS(object):
-    OBJ_TYPES = {str: self._cast_str, dict: self._cast_dict}
+    # OBJ_TYPES = {str: IPFS._cast_str, dict: IPFS._cast_dict}
 
     def __init__(self):
         '''TODO: Decide if `kv` is needed
@@ -19,14 +18,14 @@ class IPFS(object):
         self.kv = {}
         self.client = None
         try:
-            self.client = ipfsapi.connect(CONFIG.host, CONFIG.port)
-        except:
+            self.client = ipfsapi.connect(CONFIG['host'], CONFIG['port'])
+        except Exception as e:
             print("IPFS daemon not started.")
 
     def upload_local(self, key: str, obj: object):
         '''Test method, DO NOT USE
         '''
-        addr = self.client.add_bytes(obj)
+        addr = self.client.add(obj)
         self.kv[key] = addr
 
     def download_local(self, key: str) -> object:
@@ -62,7 +61,7 @@ class IPFS(object):
         '''Helper function to deploy a Python object onto IPFS, 
         returns an IPFS hash
         '''
-        return self.client.add_bytes(obj)
+        return self.client.add(obj)
 
     def _ipfs_to_blockchain(self, ipfs_hash: str) -> bytes:
         '''Helper function to convert IPFS hashes to on-chain content addresses

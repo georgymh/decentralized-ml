@@ -11,12 +11,13 @@ class DMLJob(object):
     def __init__(
         self,
         job_type,
-        serialized_model,
-        model_type,
+        serialized_model=None,
+        model_type=None,
         config={},
         weights=None,
         hyperparams=None,
-        labeler=None
+        labeler=None,
+        blockchain_addr=None
         ):
         self.job_type = job_type
         self.serialized_model = serialized_model

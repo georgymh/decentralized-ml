@@ -10,6 +10,7 @@ from data.iterators import create_test_dataset_iterator
 from core.utils.keras import train_keras_model, validate_keras_model
 from core.utils.keras import serialize_weights
 from core.configuration import ConfigurationManager
+from core.blockchain.ipfs_utils import IPFS
 
 
 logging.basicConfig(level=logging.DEBUG,
@@ -40,6 +41,7 @@ class DMLRunner(object):
         self.dataset_path = config.get("GENERAL", "dataset_path")
         self.config = dict(config.items("RUNNER"))
         self.data_count = count_datapoints(self.dataset_path)
+        self.ipfs_client = IPFS()
 
     def run_job(self, job):
         """
@@ -87,6 +89,11 @@ class DMLRunner(object):
             # through P2P.
             #print(initial_weights)
             return_obj = initial_weights
+        elif job.job_type == 'upload':
+            weights_in_bytes = serialize_weights(initial_weights)
+            return_obj = self.ipfs_client.upload(weights_in_bytes)
+        elif job.job_type == 'download':
+            return_obj = self.ipfs_client.download(job.blockchain_addr)
         self.current_job = None
         logging.info("Finished running job!")
         return return_obj # Returning is only for debugging purposes.
