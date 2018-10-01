@@ -1,6 +1,6 @@
 import logging
 from core.EventTypes import CommMgrEventTypes, OptimizerEventTypes
-
+from core.fedavgoptimizer import FederatedAveragingOptimizer
 # TODO: Need to import 'FederatedAveragingOptimizer' (@panda).
 
 
