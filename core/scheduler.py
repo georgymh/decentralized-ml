@@ -44,6 +44,7 @@ class DMLScheduler(object):
 		self.pool = Pool(processes=self.num_runners)
 		self.runners = [DMLRunner(config_manager) for _ in range(self.num_runners)]
 		self.current_jobs = [None for _ in range(self.num_runners)]
+		self.current_results = [None for _ in range(self.num_runners)]
 		logging.info("Scheduler is set up!")
 
 	def add_job(self, dml_job):
@@ -82,7 +83,7 @@ class DMLScheduler(object):
 		if reset_history:
 			self.history = []
 		self.event = Event()
-		logging.info("Scheduler resetted!")
+		logging.info("Scheduler reset!")
 
 	def runners_run_next_jobs(self):
 		"""
@@ -90,33 +91,33 @@ class DMLScheduler(object):
 		run the next job on the queue asynchronously of the others and collect
 		the result of the job that was running before (if applicable).
 
-		If job that runner is running fails, then put the job back in queue. 
-		If job failed more than num_tries times, don't put the job back in 
+		If job that runner is running fails, then put the job back in queue.
+		If job failed more than num_tries times, don't put the job back in
 		thw queue.
 		"""
 		for i, runner in enumerate(self.runners):
 			# Check if there's any finished jobs and process them.
-			if self.current_jobs[i]:
+			if self.current_results[i]:
 				#If the job results are available
-				finished_job_results = self.current_jobs[i].get()
-				if finished_job_results['successful']:
+				finished_results = self.current_results[i].get()
+				if finished_results.status == 'successful':
 					# If the job finished successfully...
-					finished_job = finished_job_results['return_obj']
-					self.processed.append(finished_job)
-					self.history.append(finished_job)
+					self.processed.append(finished_results)
+					self.history.append(finished_results)
 					self.current_jobs[i] = None
-				else:
-					#If some error occurred
+					self.current_results[i] = None
+				elif finished_results.status == 'failed':
+					# If some error occurred
 					job_to_run = self.current_jobs[i]
 					job_to_run.num_tries_left -= 1
-					if job_to_run.num_tries_left:
-						#Still has tries remaining, so put back in queue
+					if job_to_run.num_tries_left > 0:
+						# Still has tries remaining, so put back in queue
 						self.add_job(job_to_run)
 					else:
-						#Log error, ignore failed job
-						logging.error(finished_job_results['error'])
+						# Log error, ignore failed job
+						logging.error(finished_results.error_message)
 						self.current_jobs[i] = None
-
+						self.current_results[i] = None
 
 			# Check if there's any queued jobs and schedule them.
 			if self.queue:
@@ -124,7 +125,8 @@ class DMLScheduler(object):
 				job_to_run = self.queue.popleft()
 				job_to_run.num_tries_left = self.max_tries
 				# self.current_jobs[i] = runner.run_job(job_to_run)
-				self.current_jobs[i] = self.pool.apply_async(
+				self.current_jobs[i] = job_to_run
+				self.current_results[i] = self.pool.apply_async(
 					runner.run_job,
 					(job_to_run,)
 				)
