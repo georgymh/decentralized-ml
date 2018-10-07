@@ -52,7 +52,7 @@ class CommunicationManager(object):
         # only considering the 'FederatedAveragingOptimizer' for now.
         self.optimizer = FederatedAveragingOptimizer(optimizer_params)
         actionable_event = self.optimizer.kickoff()
-        self.parse_and_run_callback(actionable_event)
+        self._parse_and_run_callback(actionable_event)
 
     def inform(self, event_type, payload):
         """
@@ -73,7 +73,7 @@ class CommunicationManager(object):
             "payload": payload
         }
         actionable_event = self.optimizer.ask(event)
-        self.parse_and_run_callback(actionable_event)
+        self._parse_and_run_callback(actionable_event)
 
     def _parse_and_run_callback(self, actionable_event):
         """
@@ -89,9 +89,10 @@ class CommunicationManager(object):
             'actionable_event_type',
             ActionableEventTypes.NOTHING.value
         )
-        callback = EVENT_TYPE_CALLBACKS[ActionableEventTypes.NOTHING.value]
-        if event_type in EVENT_TYPE_CALLBACKS:
-            callback = EVENT_TYPE_CALLBACKS[event_type]
+        callback = ACTIONABLE_EVENT_TYPE_2_CALLBACK.get(
+            event_type,
+            ActionableEventTypes.NOTHING.value
+        )
         job = actionable_event.get('job', None)
         callback(job)
 
@@ -105,6 +106,18 @@ class CommunicationManager(object):
             raise Exception("Job is not valid!")
         self.scheduler.add_job(dmljob_obj)
 
+    def configure_listener(self, listener):
+        """
+        Dependency injection for Listener.
+        """
+        self.listener = listener
+
+    def _communication_job(self, payload):
+        """
+        Helper function that tells the Listener what to upload.
+        """
+        self.listener.inform("new_weights", payload)
+
     def _terminate_session(self, dummy_param):
         """
         Helper function that removes the current session (and optimizer) from
@@ -117,7 +130,7 @@ class CommunicationManager(object):
 
     ACTIONABLE_EVENT_TYPE_2_CALLBACK = {
         ActionableEventTypes.TRAIN.value: _schedule_job,
-        ActionableEventTypes.COMMUNICATE.value: _schedule_job,
+        ActionableEventTypes.COMMUNICATE.value: _communication_job,
 		ActionableEventTypes.AVERAGE.value: _schedule_job,
         ActionableEventTypes.SPLIT.value: _schedule_job,
 		ActionableEventTypes.TERMINATE.value: _terminate_session,

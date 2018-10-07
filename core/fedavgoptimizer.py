@@ -3,6 +3,7 @@ from core.EventTypes import OptimizerEventTypes, CommMgrEventType
 	
 class FederatedAveragingOptimizer(Machine):
 	# Define some states.
+	# TODO: Fix states so that they compile; move 'after=' to Machine.add_transition() in init method
     states = ['splitting', 'training', 'communicating', 'averaging', 'terminate']
     transitions = [
         ['failure', ['splitting', 'training', 'communicating', 'averaging'], '=', after='raise_exception'],
