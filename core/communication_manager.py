@@ -51,8 +51,48 @@ class CommunicationManager(object):
         # only considering the 'FederatedAveragingOptimizer' for now.
         self.optimizer = FederatedAveragingOptimizer(optimizer_params)
         actionable_event = self.optimizer.kickoff()
-        self.parse_and_run_callback(actionable_event)
+        self._parse_and_run_callback(actionable_event)
+    def deserialize_job(self, payload):
+        pass
+    def _schedule_job(self, payload):
+        """
+        Helper function that creates a DMLJob based on the given payload and
+        schedules the job through the Scheduler.
+        """
+        if not self.scheduler:
+            raise Exception("Communication Manager needs to be configured first!")
+        if not payload:
+            raise Exception("Payload is not valid!")
+        job = self.deserialize_job(payload)
+        self.scheduler.add_job(job)
+    def configure_listener(self, listener):
+        """
+        Dependency injection for Listener.
+        """
+        self.listener = listener
+    def _communication_job(self, payload):
+        """
+        Helper function that tells the Listener what to upload.
+        """
+        self.listener.inform("new_weights", payload)
+    def _terminate_session(self, payload):
+        """
+        Helper function that removes the current session (and optimizer) from
+        the Communication Manager.
 
+        Note that it ignores the payload for now (since we're only dealing with
+        one session).
+        """
+        self.optimizer = None
+
+    ACTIONABLE_EVENT_TYPE_2_CALLBACK = {
+        ActionableEventTypes.TRAIN.value: _schedule_job,
+        ActionableEventTypes.COMMUNICATE.value: _communication_job,
+		ActionableEventTypes.AVERAGE.value: _schedule_job,
+        ActionableEventTypes.SPLIT.value: _schedule_job,
+		ActionableEventTypes.TERMINATE.value: _terminate_session,
+        ActionableEventTypes.NOTHING.value: lambda *args: None
+    }
     def inform(self, event_type, payload):
         """
         Method called by other modules to inform the Communication Manager about
@@ -72,7 +112,7 @@ class CommunicationManager(object):
             "payload": payload
         }
         actionable_event = self.optimizer.ask(event)
-        self.parse_and_run_callback(actionable_event)
+        self._parse_and_run_callback(actionable_event)
 
     def _parse_and_run_callback(self, actionable_event):
         """
@@ -88,39 +128,6 @@ class CommunicationManager(object):
             'optimizer_state',
             ActionableEventTypes.NOTHING.value
         )
-        callback = EVENT_TYPE_CALLBACKS[ActionableEventTypes.NOTHING.value]
-        if event_type in EVENT_TYPE_CALLBACKS:
-            callback = EVENT_TYPE_CALLBACKS[event_type]
+        callback = ACTIONABLE_EVENT_TYPE_2_CALLBACK.get(event_type, ActionableEventTypes.NOTHING.value)
         payload = actionable_event.get('payload', None)
         callback(payload)
-
-    def _schedule_job(self, payload):
-        """
-        Helper function that creates a DMLJob based on the given payload and
-        schedules the job through the Scheduler.
-        """
-        if not self.scheduler:
-            raise Exception("Communication Manager needs to be configured first!")
-        if not payload:
-            raise Exception("Payload is not valid!")
-        job = self.deserialize_job(payload)
-        self.scheduler.add_job(job)
-
-    def _terminate_session(self, payload):
-        """
-        Helper function that removes the current session (and optimizer) from
-        the Communication Manager.
-
-        Note that it ignores the payload for now (since we're only dealing with
-        one session).
-        """
-        self.optimizer = None
-
-    ACTIONABLE_EVENT_TYPE_2_CALLBACK = {
-        ActionableEventTypes.TRAIN.value: _schedule_job,
-        ActionableEventTypes.COMMUNICATE.value: _schedule_job,
-		ActionableEventTypes.AVERAGE.value: _schedule_job,
-        ActionableEventTypes.SPLIT.value: _schedule_job,
-		ActionableEventTypes.TERMINATE.value: _terminate_session,
-        ActionableEventTypes.NOTHING.value: lambda *args: None
-    }
