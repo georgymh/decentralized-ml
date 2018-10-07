@@ -3,6 +3,13 @@ Communication Manager and the Optimizers."""
 
 from enum import Enum
 
+class ListenerEventTypes(Enum):
+    """
+    listener events
+    """
+    NEW_WEIGHTS = "new_weights"
+    NOTHING = "NOTHING"
+
 class RawEventTypes(Enum):
     """
     Dictionary of events that the Optimizer might receive from the Communication
