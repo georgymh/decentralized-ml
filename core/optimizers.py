@@ -7,7 +7,7 @@ import numpy as np
 from transitions import Machine
 from core.utils.dmljob import DMLJob, serialize_job, deserialize_job
 from core.fed_learning import federated_averaging
-from core.EventTypes import OptimizerEventTypes, CommMgrEventTypes
+from core.utils.event_type import RawEventTypes, ActionableEventTypes
 
 class Optimizer(Machine):
 	def __init__(self, kwargs):
@@ -60,7 +60,7 @@ class Optimizer(Machine):
   #       federated_averaging(job_results)
 
 	EVENT_TYPE_CALLBACKS = {
-	    EventTypes.TRAIN.value: do_training, 
+	    EventTypes.TRAIN.value: do_training,
 	    EventTypes.VALIDATE.value: do_validating,
 	    EventTypes.AVERAGE.value: do_averaging,
 	    EventTypes.UNDEFINED.value: do_nothing,
@@ -81,18 +81,18 @@ class Optimizer(Machine):
 
 	def configure(self, CommMgr):
 		# TODO: Determine whether this method is strictly necessary?
-		self.CommMgr = CommMgr 
+		self.CommMgr = CommMgr
 
 	def schedule_job(self, job):
 		'''
 		Helper function to schedule a DMLJob via dependency injection
 		'''
 		self.scheduler.add_job(job)
-		# TODO: Get the result of the job back to the Comm. Mgr. 
+		# TODO: Get the result of the job back to the Comm. Mgr.
 
 	def make_job_from_event(self, event):
 		return deserialize_job(event)
-        
+
     def get_model_with_addr(self, model_addr):
     	'''
     	This Optimizer has been sent the address of a model that it should pick up
@@ -100,21 +100,21 @@ class Optimizer(Machine):
     	'''
     	# TODO: Be able to deserialize more than just Keras models
         return ipfs2keras(self.neural_network, model_addr)
-    
+
     def on_enter_training(self, event):
         model_addr = event.kwargs.get('model_addr')
         self.neural_network = self.get_model_with_addr(model_addr)
         print(self.model)
-        
+
     def on_exit_training(self, event):
         print("result of training {}".format(self.neural_network))
-        
+
     def is_valid(self, event):
         return True
-    
+
     def time_elapsed(self, event):
         return self.time >= self.time_threshold
-    
+
     def is_also_valid(self):
         return True
 
@@ -173,13 +173,13 @@ class Optimizer(Machine):
 # class FederatedAveraging(Optimizer):
 #     def __init__(self, participants, hyperparams):
 #         """
-#         make sure to initialize any instance variables which will be used by 
+#         make sure to initialize any instance variables which will be used by
 #         the super's init method (i.e. anything called in the setter instance
 #         methods)
 #         """
 #         self.averager = np.random.choice((participants))
 #         super().__init__(participants, hyperparams)
-    
+
 #     def setNeighbors(self, nodeID, participants, hyperparams):
 #         """
 #         creates generator of neighbors for this node
@@ -213,7 +213,7 @@ class Optimizer(Machine):
 #     # callback currently is just a bunch of switch cases. we'll abstract this. it finds the appropriate function via string switch-case, then calls the function with getval as the argument.
 #     retval = self.callback(calcval, getval)
 #     # ask optimizer how to encode the key-value relationship for your retval. Ex: if you're propagating a new model, what should the key and value be?
-#     self.send(optimizer.key(self.whoAmI(), retval), optimizer.value(self.whoAmI(), retval)) 
+#     self.send(optimizer.key(self.whoAmI(), retval), optimizer.value(self.whoAmI(), retval))
 
 # # def optimize(port, optimizer):
 #     # initialize node with the correct port/socket combination; this is how an offchain channel actually functions -by telling a specific group of peers to communicate on a specific port. now, messages will only propagate through nodes that are listening on this specific port, AKA other members of the offchain instance.
@@ -248,5 +248,3 @@ class Optimizer(Machine):
 # if __name__ == "__main__":
 #     optimizer = FederatedAveraging([1,2,3],[1,2])
 #     print(optimizer.sendInfo(1))
-
-

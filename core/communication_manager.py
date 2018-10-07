@@ -1,5 +1,5 @@
 import logging
-from core.EventTypes import CommMgrEventTypes, OptimizerEventTypes
+from core.utils.event_type import RawEventTypes, ActionableEventTypes
 from core.fedavgoptimizer import FederatedAveragingOptimizer
 # TODO: Need to import 'FederatedAveragingOptimizer' (@panda).
 
@@ -26,8 +26,8 @@ class CommunicationManager(object):
         """
         logging.info("Setting up Communication Manager...")
         self.config_manager = config_manager
-        self.optimizer = None # NOTE: Right now we're only dealing with one
-                              # session at a time, so the class is only
+        self.optimizer = None # NOTE: Since right now we're only dealing with
+                              # one session at a time, the class is only
                               # concerned with one optimizer.
         self.scheduler = None
         logging.info("Communication Manager is set up!")
@@ -86,9 +86,9 @@ class CommunicationManager(object):
         """
         event_type = actionable_event.get(
             'optimizer_state',
-            CommMgrEventTypes.NOTHING.value
+            ActionableEventTypes.NOTHING.value
         )
-        callback = EVENT_TYPE_CALLBACKS[CommMgrEventTypes.NOTHING.value]
+        callback = EVENT_TYPE_CALLBACKS[ActionableEventTypes.NOTHING.value]
         if event_type in EVENT_TYPE_CALLBACKS:
             callback = EVENT_TYPE_CALLBACKS[event_type]
         payload = actionable_event.get('payload', None)
@@ -116,11 +116,11 @@ class CommunicationManager(object):
         """
         self.optimizer = None
 
-    EVENT_TYPE_CALLBACKS = {
-        OptimizerEventTypes.TRAIN.value: _schedule_job,
-        OptimizerEventTypes.COMM.value: _schedule_job,
-		OptimizerEventTypes.AVERAGE.value: _schedule_job,
-        OptimizerEventTypes.SPLIT.value: _schedule_job,
-		OptimizerEventTypes.TERMINATE.value: _terminate_session,
-        OptimizerEventTypes.NOTHING.value: lambda *args: None
+    ACTIONABLE_EVENT_TYPE_2_CALLBACK = {
+        ActionableEventTypes.TRAIN.value: _schedule_job,
+        ActionableEventTypes.COMMUNICATE.value: _schedule_job,
+		ActionableEventTypes.AVERAGE.value: _schedule_job,
+        ActionableEventTypes.SPLIT.value: _schedule_job,
+		ActionableEventTypes.TERMINATE.value: _terminate_session,
+        ActionableEventTypes.NOTHING.value: lambda *args: None
     }
