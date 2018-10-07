@@ -12,7 +12,8 @@ class CommunicationManager(object):
     """
     Communication Manager
 
-    Manages the communication within the modules of the service.
+    Manages the communication within the modules of the service throughout all
+    active DML Sessions.
 
     Right now, the service can only have one session at a time. This will be
     reflected in the code by just having one optimizer property and no
@@ -68,7 +69,7 @@ class CommunicationManager(object):
         decide it's time to communicate the new weights to the network.
         """
         event = {
-            "event_type": event_type,
+            "raw_event_type": event_type,
             "payload": payload
         }
         actionable_event = self.optimizer.ask(event)
@@ -81,32 +82,30 @@ class CommunicationManager(object):
         nothing.
 
         The way this method parses an event is by stripping out the event type
-        and sending the raw payload to the callback function, which will handle
-        everything from there on.
+        and sending the processed payload (which should be a DML Job) to the
+        callback function, which will handle everything from there on.
         """
         event_type = actionable_event.get(
-            'optimizer_state',
+            'actionable_event_type',
             ActionableEventTypes.NOTHING.value
         )
         callback = EVENT_TYPE_CALLBACKS[ActionableEventTypes.NOTHING.value]
         if event_type in EVENT_TYPE_CALLBACKS:
             callback = EVENT_TYPE_CALLBACKS[event_type]
-        payload = actionable_event.get('payload', None)
-        callback(payload)
+        job = actionable_event.get('job', None)
+        callback(job)
 
-    def _schedule_job(self, payload):
+    def _schedule_job(self, dmljob_obj):
         """
-        Helper function that creates a DMLJob based on the given payload and
-        schedules the job through the Scheduler.
+        Helper function that schedules a DML Job through the Scheduler.
         """
         if not self.scheduler:
             raise Exception("Communication Manager needs to be configured first!")
-        if not payload:
-            raise Exception("Payload is not valid!")
-        job = self.deserialize_job(payload)
-        self.scheduler.add_job(job)
+        if not dmljob_obj:
+            raise Exception("Job is not valid!")
+        self.scheduler.add_job(dmljob_obj)
 
-    def _terminate_session(self, payload):
+    def _terminate_session(self, dummy_param):
         """
         Helper function that removes the current session (and optimizer) from
         the Communication Manager.
