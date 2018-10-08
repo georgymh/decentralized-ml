@@ -75,9 +75,9 @@ class FederatedAveragingOptimizer(Machine):
 		self.listen_iter()
 
 	CALLBACKS = {
-	    CommMgrEventTypes.RUNNER.name: handle_runner, 
-	    CommMgrEventTypes.LISTEN.name: handle_listen,
-	    CommMgrEventTypes.UNDEFINED.name: do_nothing,
+	    CommMgrEventTypes.SCHEDULE.name: handle_runner, 
+	    CommMgrEventTypes.NEW_WEIGHTS.name: handle_listen,
+	    CommMgrEventTypes.NOTHING.name: do_nothing,
 	}
 	def kickoff(self):
 		'''
@@ -94,7 +94,7 @@ class FederatedAveragingOptimizer(Machine):
 	    If the callback is not defined, it does nothing.
 	    """
 	    event_type = event.get('EventType')
-	    callback = CALLBACKS[CommMgrEventTypes.UNDEFINED.name]
+	    callback = CALLBACKS[CommMgrEventTypes.NOTHING.name]
 	    if event_type in CALLBACKS:
 	        callback = CALLBACKS[event_type]
 	    self.callback(event)

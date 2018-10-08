@@ -10,23 +10,33 @@ class ListenerEventTypes(Enum):
     NEW_WEIGHTS = "new_weights"
     NOTHING = "NOTHING"
 
-class RawEventTypes(Enum):
+class CommMgrEventTypes(Enum):
     """
-    Dictionary of events that the Optimizer might receive from the Communication
-    Manager.
-
-    The event indicates what has occurred previously in the Communication Manager.
-
-    This is essentially a 'memory' for the Optimizer so these are all past.
-    i.e., a "TRAIN" event would contain auxiliary information about what
-    occurred, in the form of a DMLResults object.
-
-    Contains all the functionality of what the Communication Manager might have
-    previously done and therefore is not specific to any one Optimizer.
+    commmgr events
     """
+    NEW_SESSION = "new_session"
+    NEW_WEIGHTS = "new_weights"
     SCHEDULE = "SCHEDULE"
     TERMINATE = "TERMINATE"
     NOTHING = "NOTHING"
+
+# class RawEventTypes(Enum):
+#     """
+#     Dictionary of events that the Optimizer might receive from the Communication
+#     Manager.
+
+#     The event indicates what has occurred previously in the Communication Manager.
+
+#     This is essentially a 'memory' for the Optimizer so these are all past.
+#     i.e., a "TRAIN" event would contain auxiliary information about what
+#     occurred, in the form of a DMLResults object.
+
+#     Contains all the functionality of what the Communication Manager might have
+#     previously done and therefore is not specific to any one Optimizer.
+#     """
+#     SCHEDULE = "SCHEDULE"
+#     TERMINATE = "TERMINATE"
+#     NOTHING = "NOTHING"
 
 class ActionableEventTypes(Enum):
     """
