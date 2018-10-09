@@ -1,5 +1,5 @@
 import logging
-from core.utils.event_type import RawEventTypes, ActionableEventTypes, CommMgrEventTypes
+from core.utils.event_types import CommMgrEventTypes, ActionableEventTypes, CommMgrEventTypes
 from core.fedavgoptimizer import FederatedAveragingOptimizer
 # TODO: Need to import 'FederatedAveragingOptimizer' (@panda).
 
@@ -163,7 +163,7 @@ class CommunicationManager(object):
             'actionable_event_type',
             ActionableEventTypes.NOTHING.value
         )
-        callback = ACTIONABLE_EVENT_TYPE_2_CALLBACK.get(
+        callback = self.ACTIONABLE_EVENT_TYPE_2_CALLBACK.get(
             event_type,
             ActionableEventTypes.NOTHING.value
         )
@@ -180,12 +180,6 @@ class CommunicationManager(object):
             raise Exception("Job is not valid!")
         self.scheduler.add_job(dmljob_obj)
 
-    def configure_listener(self, listener):
-        """
-        Dependency injection for Listener.
-        """
-        self.listener = listener
-
     def _communication_job(self, payload):
         """
         Helper function that tells the Listener what to upload.
@@ -201,12 +195,3 @@ class CommunicationManager(object):
         one session).
         """
         self.optimizer = None
-
-    ACTIONABLE_EVENT_TYPE_2_CALLBACK = {
-        ActionableEventTypes.TRAIN.value: _schedule_job,
-        ActionableEventTypes.COMMUNICATE.value: _communication_job,
-		ActionableEventTypes.AVERAGE.value: _schedule_job,
-        ActionableEventTypes.SPLIT.value: _schedule_job,
-		ActionableEventTypes.TERMINATE.value: _terminate_session,
-        ActionableEventTypes.NOTHING.value: lambda *args: None
-    }
