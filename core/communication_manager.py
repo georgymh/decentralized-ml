@@ -74,39 +74,11 @@ class CommunicationManager(object):
     def deserialize_job(self, payload):
         pass
     
-    def _schedule_job(self, payload):
-        """
-        Helper function that creates a DMLJob based on the given payload and
-        schedules the job through the Scheduler.
-        """
-        if not self.scheduler:
-            raise Exception("Communication Manager needs to be configured first!")
-        if not payload:
-            raise Exception("Payload is not valid!")
-        job = self.deserialize_job(payload)
-        self.scheduler.add_job(job)
-    
     def configure_listener(self, listener):
         """
         Dependency injection for Listener.
         """
         self.listener = listener
-    
-    def _communication_job(self, payload):
-        """
-        Helper function that tells the Listener what to upload.
-        """
-        self.listener.inform("new_weights", payload)
-    
-    def _terminate_session(self, payload):
-        """
-        Helper function that removes the current session (and optimizer) from
-        the Communication Manager.
-
-        Note that it ignores the payload for now (since we're only dealing with
-        one session).
-        """
-        self.optimizer = None
 
     def inform(self, event_type, payload):
         """
