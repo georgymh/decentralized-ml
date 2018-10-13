@@ -33,7 +33,7 @@ class ActionableEventTypes(Enum):
     """
     TRAIN = "TRAIN"
     COMMUNICATE = "COMMUNICATE"
-    AVERAGING = "AVERAGING"
+    AVERAGE = "AVERAGE"
     SPLIT = "SPLIT"
     TERMINATE = "TERMINATE"
     # WEIGHT = "WEIGHT"

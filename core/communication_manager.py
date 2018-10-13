@@ -1,6 +1,6 @@
 import logging
-from core.utils.event_type import RawEventTypes, ActionableEventTypes
-from core.fedavgoptimizer import FederatedAveragingOptimizer
+from core.utils.event_types import RawEventTypes, ActionableEventTypes
+#from core.fedavgoptimizer import FederatedAveragingOptimizer
 # TODO: Need to import 'FederatedAveragingOptimizer' (@panda).
 
 
@@ -71,7 +71,7 @@ class CommunicationManager(object):
         """
         event = {
             "raw_event_type": event_type,
-            "payload": payload
+            "payload": payload,
         }
         actionable_event = self.optimizer.ask(event)
         self._parse_and_run_callback(actionable_event)
