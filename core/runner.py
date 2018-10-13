@@ -65,7 +65,7 @@ class DMLRunner(object):
                 # logging.info(train_stats)
                 results = DMLResult(
                     status='successful',
-                    job_type=job.job_type,
+                    job=job,
                     results={
                         'new_weights': new_weights,
                         'omega': omega,
@@ -88,7 +88,7 @@ class DMLRunner(object):
                 # logging.info(val_stats)
                 results = DMLResult(
                     status='successful',
-                    job_type=job.job_type,
+                    job=job,
                     results={
                         'val_stats': val_stats,
                     },
@@ -106,7 +106,7 @@ class DMLRunner(object):
                 # logging.info(initial_weights)
                 results = DMLResult(
                     status='successful',
-                    job_type=job.job_type,
+                    job=job,
                     results={
                         'initial_weights': initial_weights,
                     },
@@ -116,7 +116,7 @@ class DMLRunner(object):
             logging.error(str(e))
             results = DMLResult(
                 status='failed',
-                job_type=job.job_type,
+                job=job.job,
                 error_message=str(e),
                 results={},
             )
