@@ -33,13 +33,14 @@ class CommunicationManager(object):
         self.scheduler = None
         logging.info("Communication Manager is set up!")
 
-    def configure(self, scheduler):
+    def configure(self, scheduler, listener):
         """
         Configures the Communication Manager so that it can submit jobs to the
-        Scheduler.
+        Scheduler and Listener.
         """
         logging.info("Configuring the Communication Manager...")
         self.scheduler = scheduler
+        self.listener = listener
         logging.info("Communication Manager is configured!")
 
     def create_session(self, session_id, serialized_job, network, optimizer_params):
@@ -105,12 +106,6 @@ class CommunicationManager(object):
         if not dmljob_obj:
             raise Exception("Job is not valid!")
         self.scheduler.add_job(dmljob_obj)
-
-    def configure_listener(self, listener):
-        """
-        Dependency injection for Listener.
-        """
-        self.listener = listener
 
     def _communication_job(self, payload):
         """
