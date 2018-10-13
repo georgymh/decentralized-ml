@@ -1,5 +1,5 @@
 import logging
-from core.utils.event_types import CommMgrEventTypes, ActionableEventTypes, CommMgrEventTypes
+from core.utils.event_type import RawEventTypes, ActionableEventTypes
 from core.fedavgoptimizer import FederatedAveragingOptimizer
 # TODO: Need to import 'FederatedAveragingOptimizer' (@panda).
 
@@ -32,16 +32,6 @@ class CommunicationManager(object):
                               # concerned with one optimizer.
         self.scheduler = None
         logging.info("Communication Manager is set up!")
-        self.ACTIONABLE_EVENT_TYPE_2_CALLBACK = {
-            ActionableEventTypes.TRAIN.value: self._schedule_job,
-            ActionableEventTypes.COMMUNICATE.value: self._communication_job,
-            ActionableEventTypes.AVERAGE.value: self._schedule_job,
-            ActionableEventTypes.SPLIT.value: self._schedule_job,
-            CommMgrEventTypes.TERMINATE.value: self._terminate_session,
-            CommMgrEventTypes.NEW_SESSION.value: self._create_session,
-            CommMgrEventTypes.NEW_WEIGHTS.value: self._do_nothing,
-            ActionableEventTypes.NOTHING.value: lambda *args: None
-        }
 
     def configure(self, scheduler):
         """
@@ -52,13 +42,7 @@ class CommunicationManager(object):
         self.scheduler = scheduler
         logging.info("Communication Manager is configured!")
 
-    def _do_nothing(self, payload):
-        """
-        Do nothing.
-        """
-        pass
-
-    def _create_session(self, payload):
+    def create_session(self, session_id, serialized_job, network, optimizer_params):
         """
         Creates a new session and optimizer based on the parameters sent by a
         model developer. It then asks the optimizer what's the first thing to do
@@ -66,30 +50,16 @@ class CommunicationManager(object):
         """
         # NOTE: We removed the 'optimizer_type' argument since for the MVP we're
         # only considering the 'FederatedAveragingOptimizer' for now.
-        session_id, serialized_job, network, optimizer_params = payload
         self.optimizer = FederatedAveragingOptimizer(optimizer_params)
         actionable_event = self.optimizer.kickoff()
         self._parse_and_run_callback(actionable_event)
-    
-    def deserialize_job(self, payload):
-        pass
-    
-    def configure_listener(self, listener):
-        """
-        Dependency injection for Listener.
-        """
-        self.listener = listener
 
     def inform(self, event_type, payload):
         """
         Method called by other modules to inform the Communication Manager about
         events that are going on in the service.
 
-        If there isn't an active optimizer, the commmgr will handle it 
-        (make a new optimizer if the call is toto make a new optimizer) or
-        do nothing (if the call wasn't to make a new optimizer)
-
-        Else, payloads are relayed to the active optimizer (right now the only
+        These payloads are relayed to the active optimizer (right now the only
         one, in the future, the one corresponding to the session_id passed),
         which decides how and to whom the Communication Manager should
         communicate the event/message.
@@ -102,24 +72,8 @@ class CommunicationManager(object):
             "raw_event_type": event_type,
             "payload": payload
         }
-        if self.optimizer:
-            actionable_event = self.optimizer.ask(event)
-            self._parse_and_run_callback(actionable_event)
-        else:
-            self._run_callback(event)
-
-    def _run_callback(self, self_event):
-        """
-        Parses new event for comm mgr and returns callback, which could be to do
-        nothing.
-        """
-        event_type = self_event.get(
-            "event_type",
-            ActionableEventTypes.NOTHING.value
-        )
-        callback = self.ACTIONABLE_EVENT_TYPE_2_CALLBACK.get(event_type, ActionableEventTypes.NOTHING.value)
-        payload = self_event.get('payload', None)
-        callback(payload)
+        actionable_event = self.optimizer.ask(event)
+        self._parse_and_run_callback(actionable_event)
 
     def _parse_and_run_callback(self, actionable_event):
         """
@@ -135,7 +89,7 @@ class CommunicationManager(object):
             'actionable_event_type',
             ActionableEventTypes.NOTHING.value
         )
-        callback = self.ACTIONABLE_EVENT_TYPE_2_CALLBACK.get(
+        callback = ACTIONABLE_EVENT_TYPE_2_CALLBACK.get(
             event_type,
             ActionableEventTypes.NOTHING.value
         )
@@ -152,6 +106,12 @@ class CommunicationManager(object):
             raise Exception("Job is not valid!")
         self.scheduler.add_job(dmljob_obj)
 
+    def configure_listener(self, listener):
+        """
+        Dependency injection for Listener.
+        """
+        self.listener = listener
+
     def _communication_job(self, payload):
         """
         Helper function that tells the Listener what to upload.
@@ -167,3 +127,12 @@ class CommunicationManager(object):
         one session).
         """
         self.optimizer = None
+
+    ACTIONABLE_EVENT_TYPE_2_CALLBACK = {
+        ActionableEventTypes.TRAIN.value: _schedule_job,
+        ActionableEventTypes.COMMUNICATE.value: _communication_job,
+		ActionableEventTypes.AVERAGE.value: _schedule_job,
+        ActionableEventTypes.SPLIT.value: _schedule_job,
+		ActionableEventTypes.TERMINATE.value: _terminate_session,
+        ActionableEventTypes.NOTHING.value: lambda *args: None
+    }
