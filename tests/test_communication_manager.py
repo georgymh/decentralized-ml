@@ -21,24 +21,24 @@ def test_communication_manager_can_be_initialized(config_manager):
 
 def test_communication_manager_creates_new_sessions(config_manager):
     """To be implemented."""
-    pass
+    assert False, "Implement me!"
 
 def test_communication_manager_fails_if_not_configured(config_manager):
     """To be implemented."""
-    pass
+    assert False, "Implement me!"
 
 def test_communication_manager_can_inform_the_optimizer(config_manager):
     """To be implemented."""
-    pass
+    assert False, "Implement me!"
 
 def test_communication_manager_can_parse_events_correctly(config_manager):
     """To be implemented."""
-    pass
+    assert False, "Implement me!"
 
 def test_communication_manager_can_schedule_jobs(config_manager):
     """To be implemented."""
-    pass
+    assert False, "Implement me!"
 
 def test_communication_manager_terminates_sessions(config_manager):
     """To be implemented."""
-    pass
+    assert False, "Implement me!"

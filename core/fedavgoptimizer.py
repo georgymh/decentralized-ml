@@ -1,5 +1,5 @@
 from transitions import Machine
-from core.utils.event_types import ActionableEventTypes, CommMgrEventTypes
+from core.utils.event_types import ActionableEventTypes, RawEventTypes
 	
 class FederatedAveragingOptimizer(Machine):
 	# Define some states.
@@ -39,9 +39,10 @@ class FederatedAveragingOptimizer(Machine):
 		self.add_transition('train_iter', 'training', None, after='increment_train_iter')
 		self.add_transition('listen_iter', '*', None, after='increment_listen_iter')
 		self.CALLBACKS = {
-			CommMgrEventTypes.SCHEDULE.name: self.handle_runner, 
-			CommMgrEventTypes.NEW_WEIGHTS.name: self.handle_listen,
-			CommMgrEventTypes.NOTHING.name: self.do_nothing,
+			RawEventTypes.SPLIT.value: self.done_splitting,
+			RawEventTypes.SCHEDULE.value: self.handle_runner, 
+			RawEventTypes.NEW_WEIGHTS.value: self.handle_listen,
+			RawEventTypes.NOTHING.value: self.do_nothing,
 		}
 		
 	def increment_train_iter(self):
@@ -70,13 +71,13 @@ class FederatedAveragingOptimizer(Machine):
 		if self.total_iterations >= self.total_bound:
 			self.done_everything()
 
-	def handle_runner(self):
+	def handle_runner(self, args=None):
 		'''
 		Doesn't do anything for now.
 		'''
 		self.train_iter()
 
-	def handle_listen(self):
+	def handle_listen(self, args=None):
 		'''
 		Doesn't do anything for now.
 		'''
@@ -98,7 +99,8 @@ class FederatedAveragingOptimizer(Machine):
 		If the callback is not defined, it does nothing.
 		"""
 		event_type = event.get('raw_event_type')
-		callback = self.CALLBACKS[CommMgrEventTypes.NOTHING.name]
+		# print(event_type)
+		callback = self.CALLBACKS[RawEventTypes.NOTHING.name]
 		if event_type in self.CALLBACKS:
 			callback = self.CALLBACKS[event_type]
 		callback(event)

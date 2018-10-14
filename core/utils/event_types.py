@@ -3,40 +3,26 @@ Communication Manager and the Optimizers."""
 
 from enum import Enum
 
-class ListenerEventTypes(Enum):
+class RawEventTypes(Enum):
     """
-    listener events
-    """
-    NEW_WEIGHTS = "new_weights"
-    NOTHING = "NOTHING"
+    Dictionary of events that the Optimizer might receive from the Communication
+    Manager.
 
-class CommMgrEventTypes(Enum):
-    """
-    commmgr events
+    The event indicates what has occurred previously in the Communication Manager.
+
+    This is essentially a 'memory' for the Optimizer so these are all past.
+    i.e., a "TRAIN" event would contain auxiliary information about what
+    occurred, in the form of a DMLResults object.
+
+    Contains all the functionality of what the Communication Manager might have
+    previously done and therefore is not specific to any one Optimizer.
     """
     NEW_SESSION = "new_session"
     NEW_WEIGHTS = "new_weights"
+    SPLIT = "done_splitting"
     SCHEDULE = "SCHEDULE"
     TERMINATE = "TERMINATE"
     NOTHING = "NOTHING"
-
-# class RawEventTypes(Enum):
-#     """
-#     Dictionary of events that the Optimizer might receive from the Communication
-#     Manager.
-
-#     The event indicates what has occurred previously in the Communication Manager.
-
-#     This is essentially a 'memory' for the Optimizer so these are all past.
-#     i.e., a "TRAIN" event would contain auxiliary information about what
-#     occurred, in the form of a DMLResults object.
-
-#     Contains all the functionality of what the Communication Manager might have
-#     previously done and therefore is not specific to any one Optimizer.
-#     """
-#     SCHEDULE = "SCHEDULE"
-#     TERMINATE = "TERMINATE"
-#     NOTHING = "NOTHING"
 
 class ActionableEventTypes(Enum):
     """
@@ -48,10 +34,10 @@ class ActionableEventTypes(Enum):
 
     This dictionary has to contain all possible states that an Optimizer can be in.
     """
-    TRAIN = "TRAIN"
-    COMMUNICATE = "COMMUNICATE"
-    AVERAGING = "AVERAGING"
-    SPLIT = "SPLIT"
-    TERMINATE = "TERMINATE"
+    TRAIN = "training"
+    COMMUNICATE = "communicating"
+    AVERAGE = "averaging"
+    SPLIT = "splitting"
+    TERMINATE = "terminate"
     # WEIGHT = "WEIGHT"
     NOTHING = "NOTHING"

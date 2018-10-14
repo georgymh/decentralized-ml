@@ -1,5 +1,5 @@
 import logging
-from core.utils.event_types import CommMgrEventTypes, ActionableEventTypes
+from core.utils.event_types import RawEventTypes, ActionableEventTypes
 from core.fedavgoptimizer import FederatedAveragingOptimizer
 # TODO: Need to import 'FederatedAveragingOptimizer' (@panda).
 
@@ -35,18 +35,19 @@ class CommunicationManager(object):
             ActionableEventTypes.AVERAGE.value: self._schedule_job,
             ActionableEventTypes.SPLIT.value: self._split_job,
             ActionableEventTypes.NOTHING.value: lambda *args: None,
-            CommMgrEventTypes.TERMINATE.value: self._terminate_session,
-            CommMgrEventTypes.NEW_SESSION.value: self._create_session,
-            CommMgrEventTypes.NEW_WEIGHTS.value: self._do_nothing
+            RawEventTypes.TERMINATE.value: self._terminate_session,
+            RawEventTypes.NEW_SESSION.value: self._create_session,
+            RawEventTypes.NEW_WEIGHTS.value: self._do_nothing
         }
 
-    def configure(self, scheduler):
+    def configure(self, scheduler, listener):
         """
         Configures the Communication Manager so that it can submit jobs to the
-        Scheduler.
+        Scheduler and Listener.
         """
         logging.info("Configuring the Communication Manager...")
         self.scheduler = scheduler
+        self.listener = listener
         logging.info("Communication Manager is configured!")
 
     def _split_job(self, payload):
@@ -119,11 +120,7 @@ class CommunicationManager(object):
         Method called by other modules to inform the Communication Manager about
         events that are going on in the service.
 
-        If there isn't an active optimizer, the commmgr will handle it 
-        (make a new optimizer if the call is toto make a new optimizer) or
-        do nothing (if the call wasn't to make a new optimizer)
-
-        Else, payloads are relayed to the active optimizer (right now the only
+        These payloads are relayed to the active optimizer (right now the only
         one, in the future, the one corresponding to the session_id passed),
         which decides how and to whom the Communication Manager should
         communicate the event/message.
@@ -135,14 +132,15 @@ class CommunicationManager(object):
         logging.info("information has been given: {}".format(event_type))
         event = {
             "raw_event_type": event_type,
-            "payload": payload
+            "payload": payload,
         }
         if self.optimizer:
-            logging.info("optimizer available; asking optimizer")
+            # logging.info("optimizer available; asking optimizer")
             actionable_event = self.optimizer.ask(event)
+            # logging.info("optimizer told me: {}".format(actionable_event))
             self._parse_and_run_callback(actionable_event)
         else:
-            logging.info("no optimizer available. this should be a create session")
+            # logging.info("no optimizer available. this should be a create session")
             self._run_callback(event)
 
     def _run_callback(self, self_event):
