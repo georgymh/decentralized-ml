@@ -11,8 +11,10 @@ logging.basicConfig(level=logging.DEBUG,
 class CommunicationManager(object):
     """
     Communication Manager
+
     Manages the communication within the modules of the service throughout all
     active DML Sessions.
+
     Right now, the service can only have one session at a time. This will be
     reflected in the code by just having one optimizer property and no
     information about sessions throughout the code.
@@ -31,77 +33,46 @@ class CommunicationManager(object):
         logging.info("Communication Manager is set up!")
         self.ACTIONABLE_EVENT_TYPE_2_CALLBACK = {
             ActionableEventTypes.TRAIN.value: self._schedule_job,
-            ActionableEventTypes.COMMUNICATE.value: self._communication_job,
             ActionableEventTypes.AVERAGE.value: self._schedule_job,
-            ActionableEventTypes.SPLIT.value: self._schedule_job,
-            CommMgrEventTypes.TERMINATE.value: self._terminate_session,
-            CommMgrEventTypes.NEW_SESSION.value: self._create_session,
-            CommMgrEventTypes.NEW_WEIGHTS.value: self._do_nothing,
-            ActionableEventTypes.NOTHING.value: lambda *args: None
+            ActionableEventTypes.COMMUNICATE.value: self._communication_job,
+            ActionableEventTypes.SPLIT.value: self._transform_and_split,
+            ActionableEventTypes.TERMINATE.value: self._terminate_session,
+            ActionableEventTypes.NOTHING.value: self._do_nothing,
         }
 
-    def configure(self, scheduler):
+        # These are unmapped and will only be received when an optimizer is not
+        # active.
+        self.RAW_EVENT_TYPE_2_CALLBACK = {
+            RawEventTypes.NEW_SESSION.value: self._create_session,
+            RawEventTypes.NEW_WEIGHTS.value: self._do_nothing,
+            RawEventTypes.TERMINATE.value: self._terminate_session,
+
+        }
+
+    def configure(self, scheduler, listener):
         """
         Configures the Communication Manager so that it can submit jobs to the
-        Scheduler.
+        Scheduler and Listener.
         """
         logging.info("Configuring the Communication Manager...")
         self.scheduler = scheduler
+        self.listener = listener
         logging.info("Communication Manager is configured!")
 
-    def _do_nothing(self, payload):
+    def __configure_listener(self, listener):
         """
-        Do nothing.
-        """
-        pass
+        NOTE: ONLY USED FOR THE BLOCKCHAIN BRANCH.
 
-    def _create_session(self, payload):
-        """
-        Creates a new session and optimizer based on the parameters sent by a
-        model developer. It then asks the optimizer what's the first thing to do
-        and the service starts working on that session from that point on.
-        """
-        # NOTE: We removed the 'optimizer_type' argument since for the MVP we're
-        # only considering the 'FederatedAveragingOptimizer' for now.
-        logging.info("New optimizer session is being set up: {}".format(payload))
-        # TODO: Use session_id
-        session_id = payload.get('key')
-        optimizer_params = payload.get('content')
-        self.optimizer = FederatedAveragingOptimizer(optimizer_params)
-        actionable_event = self.optimizer.kickoff()
-        self._parse_and_run_callback(actionable_event)
-    
-    def deserialize_job(self, payload):
-        return payload
-    
-    def configure_listener(self, listener):
-        """
         Dependency injection for Listener.
         """
         self.listener = listener
-    
-    def _communication_job(self, payload):
-        """
-        Helper function that tells the Listener what to upload.
-        """
-        self.listener.inform("new_weights", payload)
-    
-    def _terminate_session(self, payload):
-        """
-        Helper function that removes the current session (and optimizer) from
-        the Communication Manager.
-
-        Note that it ignores the payload for now (since we're only dealing with
-        one session).
-        """
-        self.optimizer = None
 
     def inform(self, event_type, payload):
         """
         Method called by other modules to inform the Communication Manager about
         events that are going on in the service.
 
-        If there isn't an active optimizer, the commmgr will handle it 
+        If there isn't an active optimizer, the commmgr will handle it
         (make a new optimizer if the call is toto make a new optimizer) or
         do nothing (if the call wasn't to make a new optimizer)
 
@@ -114,29 +85,34 @@ class CommunicationManager(object):
         node is done training a particular model, to which the Optimizer could
         decide it's time to communicate the new weights to the network.
         """
-        logging.info("information has been given: {}".format(event_type))
-        event = {
+        logging.info("Information has been received: type({})".format(event_type))
+        raw_event = {
             "raw_event_type": event_type,
             "payload": payload
         }
         if self.optimizer:
-            logging.info("optimizer available; asking optimizer")
-            actionable_event = self.optimizer.ask(event)
+            logging.info("Optimizer available. Asking optimizer...")
+            actionable_event = self.optimizer.ask(raw_event)
             self._parse_and_run_callback(actionable_event)
         else:
-            logging.info("no optimizer available. this should be a create session")
-            self._run_callback(event)
+            # This happens when we need to start the session for the first time.
+            # We're passing a raw event.
+            logging.info("No optimizer available. This should be a create session.")
+            self._parse_and_run_raw_event(raw_event)
 
-    def _run_callback(self, self_event):
+
+    # Parsing routines.
+
+    def _parse_and_run_raw_event(self, self_event):
         """
-        Parses new event for comm mgr and returns callback, which could be to do
-        nothing.
+        Parses a raw_event given by the listener and runs the corresponding
+        "callback" based on the event type, which could be nothing.
         """
-        event_type = self_event.get(
-            "raw_event_type",
+        event_type = actionable_event.get('raw_event_type', None)
+        callback = self.ACTIONABLE_EVENT_TYPE_2_CALLBACK.get(
+            event_type,
             ActionableEventTypes.NOTHING.value
         )
-        callback = self.ACTIONABLE_EVENT_TYPE_2_CALLBACK.get(event_type, ActionableEventTypes.NOTHING.value)
         payload = self_event.get('payload', None)
         callback(payload)
 
@@ -150,10 +126,7 @@ class CommunicationManager(object):
         and sending the processed payload (which should be a DML Job) to the
         callback function, which will handle everything from there on.
         """
-        event_type = actionable_event.get(
-            'actionable_event_type',
-            ActionableEventTypes.NOTHING.value
-        )
+        event_type = actionable_event.get('actionable_event_type', None)
         callback = self.ACTIONABLE_EVENT_TYPE_2_CALLBACK.get(
             event_type,
             ActionableEventTypes.NOTHING.value
@@ -161,12 +134,69 @@ class CommunicationManager(object):
         job = actionable_event.get('job', None)
         callback(job)
 
-    def _schedule_job(self, dmljob_obj):
+
+    # Callbacks.
+
+    def _create_session(self, payload):
+        """
+        Creates a new session and optimizer based on the parameters sent by a
+        model developer. It then asks the optimizer what's the first thing to do
+        and the service starts working on that session from that point on.
+        """
+        # NOTE: We removed the 'optimizer_type' argument since for the MVP we're
+        # only considering the 'FederatedAveragingOptimizer' for now.
+        # TODO: We need to incorporate session id's when we're ready.
+        logging.info("New optimizer session is being set up: {}".format(payload))
+        session_id = payload.get('key')
+        content = payload.get('content')
+
+        optimizer_params = content.get('optimizer_params')
+        serialized_job = content.get('serialized_job')
+
+        self.optimizer = FederatedAveragingOptimizer(content)
+        actionable_event = self.optimizer.kickoff()
+        self._parse_and_run_callback(actionable_event)
+
+    def _transform_and_split(self, payload):
+        """
+        Transforms and splits the local dataset.
+
+        TO BE IMPLEMENTED.
+        """
+        pass
+
+    def _schedule_job(self, payload):
         """
         Helper function that schedules a DML Job through the Scheduler.
         """
         if not self.scheduler:
             raise Exception("Communication Manager needs to be configured first!")
+        if not payload and not payload.get('job', None):
+            raise Exception("Payload is not valid!")
+        dmljob_obj = deserialize_job(payload['job'])
         if not dmljob_obj:
             raise Exception("Job is not valid!")
         self.scheduler.add_job(dmljob_obj)
+
+    def _communication_job(self, payload):
+        """
+        Helper function that tells the Listener what to upload.
+        """
+        self.listener.inform("new_weights", payload)
+
+    def _terminate_session(self, payload):
+        """
+        Helper function that removes the current session (and optimizer) from
+        the Communication Manager.
+
+        Note that it ignores the payload for now (since we're only dealing with
+        one session).
+        """
+        self.optimizer = None
+
+    def _do_nothing(self, payload):
+        """
+        Do nothing.
+        """
+        logging.info("Doing nothing.")
+        pass
