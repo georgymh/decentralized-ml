@@ -4,16 +4,6 @@ from core.utils.event_types import ActionableEventTypes, CommMgrEventTypes
 class FederatedAveragingOptimizer(Machine):
 	# Define some states.
 	# TODO: Fix states so that they compile; move 'after=' to Machine.add_transition() in init method
-	states = ['splitting', 'training', 'communicating', 'averaging', 'terminate']
-	transitions = [
-		# ['failure', ['splitting', 'training', 'communicating', 'averaging'], '=', after='raise_exception'],
-		# ['train_iter', 'training', None, after='increment_train_iter'],
-		['done_training', 'training', 'communicating'],
-		# ['listen_iter', '*', None, after='increment_listen_iter'],
-		['done_listening', 'communicating', 'averaging'],
-		['done_averaging', 'averaging', 'training'],
-		['done_splitting', 'splitting', 'training'],
-		['done_everything', '*', 'terminate']]
 	def __init__(self, kwargs={}):
 		'''
 		Kwargs is a dictionary containing all the info needed to initialize the Optimizer.
@@ -28,14 +18,26 @@ class FederatedAveragingOptimizer(Machine):
 		self.listen_bound = kwargs.get('listen_bound', 1)
 		self.total_bound = kwargs.get('total_bound', 2)
 		self.training_history = []
-
+		states = kwargs.get('states',
+				['splitting', 'training', 'communicating', 'averaging', 'terminate'])
+		transitions = kwargs.get('transitions',
+			[
+			# {'train_iter', 'training', None, after='increment_train_iter'},
+			# ['failure', ['splitting', 'training', 'communicating', 'averaging'], '=', after='raise_exception'],
+			# ['train_iter', 'training', None, after='increment_train_iter'],
+			['done_training', 'training', 'communicating'],
+			# ['listen_iter', '*', None, after='increment_listen_iter'],
+			['done_listening', 'communicating', 'averaging'],
+			['done_averaging', 'averaging', 'training'],
+			['done_splitting', 'splitting', 'training'],
+			['done_everything', '*', 'terminate']])
 		# Initialize the state machine
-		Machine.__init__(model=self, 
-							   states=FederatedAveragingOptimizer.states, 
-							   transitions=FederatedAveragingOptimizer.transitions, 
+		Machine.__init__(self, 
+							   states=states, 
+							   transitions=transitions, 
 							   initial='splitting')
-		self.Machine.add_transition('train_iter', 'training', None, after='increment_train_iter')
-		self.Machine.add_transition('listen_iter', '*', None, after='increment_listen_iter')
+		self.add_transition('train_iter', 'training', None, after='increment_train_iter')
+		self.add_transition('listen_iter', '*', None, after='increment_listen_iter')
 		self.CALLBACKS = {
 			CommMgrEventTypes.SCHEDULE.name: self.handle_runner, 
 			CommMgrEventTypes.NEW_WEIGHTS.name: self.handle_listen,
@@ -95,12 +97,12 @@ class FederatedAveragingOptimizer(Machine):
 		Parses an event dictionary into a callback.
 		If the callback is not defined, it does nothing.
 		"""
-		event_type = event.get('EventType')
+		event_type = event.get('raw_event_type')
 		callback = self.CALLBACKS[CommMgrEventTypes.NOTHING.name]
 		if event_type in self.CALLBACKS:
 			callback = self.CALLBACKS[event_type]
 		callback(event)
-		event['optimizer_state'] = self.state
+		event['actionable_event_type'] = self.state
 		return event
 
 	def configure(self, CommMgr):
