@@ -46,6 +46,7 @@ class CommunicationManager(object):
             RawEventTypes.NEW_SESSION.value: self._create_session,
             RawEventTypes.NEW_WEIGHTS.value: self._do_nothing,
             RawEventTypes.TERMINATE.value: self._terminate_session,
+            RawEventTypes.NOTHING.value: self._do_nothing,
         }
 
     def configure(self, scheduler, listener):
@@ -102,15 +103,15 @@ class CommunicationManager(object):
 
     # Parsing routines.
 
-    def _parse_and_run_raw_event(self, self_event):
+    def _parse_and_run_raw_event(self, raw_event):
         """
         Parses a raw_event given by the listener and runs the corresponding
         "callback" based on the event type, which could be nothing.
         """
-        event_type = actionable_event.get('raw_event_type', None)
-        callback = self.ACTIONABLE_EVENT_TYPE_2_CALLBACK.get(
+        event_type = raw_event.get('raw_event_type', None)
+        callback = self.RAW_EVENT_TYPE_2_CALLBACK.get(
             event_type,
-            ActionableEventTypes.NOTHING.value
+            RawEventTypes.NOTHING.value
         )
         payload = self_event.get('payload', None)
         callback(payload)
@@ -130,8 +131,8 @@ class CommunicationManager(object):
             event_type,
             ActionableEventTypes.NOTHING.value
         )
-        job = actionable_event.get('job', None)
-        callback(job)
+        payload = actionable_event.get('payload', None)
+        callback(payload)
 
 
     # Callbacks.
