@@ -46,7 +46,6 @@ class CommunicationManager(object):
             RawEventTypes.NEW_SESSION.value: self._create_session,
             RawEventTypes.NEW_WEIGHTS.value: self._do_nothing,
             RawEventTypes.TERMINATE.value: self._terminate_session,
-
         }
 
     def configure(self, scheduler, listener):

@@ -17,11 +17,10 @@ class RawEventTypes(Enum):
     Contains all the functionality of what the Communication Manager might have
     previously done and therefore is not specific to any one Optimizer.
     """
-    NEW_SESSION = "new_session"
-    NEW_WEIGHTS = "new_weights"
-    SPLIT = "done_splitting"
-    SCHEDULE = "SCHEDULE"
+    NEW_SESSION = "NEW_SESSION"
+    NEW_WEIGHTS = "NEW_WEIGHTS"
     TERMINATE = "TERMINATE"
+    JOB_FINISHED = "JOB_FINISHED"
     NOTHING = "NOTHING"
 
 class ActionableEventTypes(Enum):
@@ -34,10 +33,9 @@ class ActionableEventTypes(Enum):
 
     This dictionary has to contain all possible states that an Optimizer can be in.
     """
-    TRAIN = "training"
-    COMMUNICATE = "communicating"
-    AVERAGE = "averaging"
-    SPLIT = "splitting"
-    TERMINATE = "terminate"
-    # WEIGHT = "WEIGHT"
+    SPLIT = "SPLIT"
+    TRAIN = "TRAIN"
+    AVERAGE = "AVERAGE"
+    COMMUNICATE = "COMMUNICATE"
+    TERMINATE = "TERMINATE"
     NOTHING = "NOTHING"
