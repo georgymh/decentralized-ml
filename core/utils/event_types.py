@@ -17,9 +17,10 @@ class RawEventTypes(Enum):
     Contains all the functionality of what the Communication Manager might have
     previously done and therefore is not specific to any one Optimizer.
     """
-    NEW_SESSION = "NEW_SESSION"
-    NEW_WEIGHTS = "NEW_WEIGHTS"
+    NEW_SESSION = "new_session"
+    NEW_WEIGHTS = "new_weights"
     TERMINATE = "TERMINATE"
+    SPLIT = "done_splitting"
     JOB_FINISHED = "JOB_FINISHED"
     NOTHING = "NOTHING"
 

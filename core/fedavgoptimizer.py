@@ -82,7 +82,6 @@ class FederatedAveragingOptimizer(Machine):
 		Doesn't do anything for now.
 		'''
 		self.listen_iter()
-
 	
 	def kickoff(self):
 		'''
