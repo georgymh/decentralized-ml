@@ -60,8 +60,6 @@ class DMLRunner(object):
                     job.hyperparams,
                     job.label_index
                 )
-                # TODO: Send the (new_weights_in_bytes, omega) to the aggregator
-                # through P2P.
                 # logging.info(train_stats)
                 results = DMLResult(
                     status='successful',
@@ -81,10 +79,6 @@ class DMLRunner(object):
                      job.hyperparams,
                      job.label_index
                 )
-
-                # TODO: Send the results to the developer through P2P (maybe).
-                # How are we getting this metadata (val_stats) back to the user?
-                # This has been assigned to Neelesh ^
                 # logging.info(val_stats)
                 results = DMLResult(
                     status='successful',
@@ -101,8 +95,6 @@ class DMLRunner(object):
                     job.framework_type
                 )
                 weights_in_bytes = serialize_weights(initial_weights)
-                # TODO: Send (weights_in_bytes) to all nodes/aggregator/developer
-                # through P2P.
                 # logging.info(initial_weights)
                 results = DMLResult(
                     status='successful',

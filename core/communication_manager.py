@@ -146,7 +146,7 @@ class CommunicationManager(object):
         # NOTE: We removed the 'optimizer_type' argument since for the MVP we're
         # only considering the 'FederatedAveragingOptimizer' for now.
         # TODO: We need to incorporate session id's when we're ready.
-        logging.info("New optimizer session is being set up: {}".format(payload))
+        logging.info("New optimizer session is being set up...")
         session_id = payload.get('key')
         content = payload.get('content')
 
