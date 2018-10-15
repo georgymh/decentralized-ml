@@ -11,7 +11,7 @@ from core.utils.keras import train_keras_model, validate_keras_model
 from core.utils.keras import serialize_weights
 from core.configuration import ConfigurationManager
 from core.utils.dmlresult import DMLResult
-
+from core.fed_learning import federated_averaging
 
 logging.basicConfig(level=logging.DEBUG,
                     format='[Runner] %(asctime)s %(levelname)s %(message)s')
@@ -103,6 +103,16 @@ class DMLRunner(object):
                         'initial_weights': initial_weights,
                     },
                     error_message="",
+                )
+            elif job.job_type == 'average':
+                averaged_weights = federated_averaging(job.list_of_serialized_weights)
+                results = DMLResult(
+                    status='successful',
+                    job=job,
+                    results={
+                        'weights': averaged_weights
+                    },
+                    error_message=""
                 )
         except Exception as e:
             logging.error(str(e))

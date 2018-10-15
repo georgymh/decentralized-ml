@@ -1,6 +1,7 @@
 import logging
 from core.utils.event_types import RawEventTypes, ActionableEventTypes
 from core.fedavgoptimizer import FederatedAveragingOptimizer
+from core.utils.dmljob import deserialize_job
 # TODO: Need to import 'FederatedAveragingOptimizer' (@panda).
 
 
@@ -171,7 +172,7 @@ class CommunicationManager(object):
         """
         if not self.scheduler:
             raise Exception("Communication Manager needs to be configured first!")
-        if not payload and not payload.get('job', None):
+        if not payload or 'job' not in payload:
             raise Exception("Payload is not valid!")
         dmljob_obj = deserialize_job(payload['job'])
         if not dmljob_obj:

@@ -23,7 +23,7 @@ def federated_averaging(list_of_serialized_weights):
         layer_weights_list = []
         for i, serialized_weights in enumerate(list_of_serialized_weights):
             bytestring = serialized_weights[j]
-            deserialized_weight = deserialize_single_weights(serialized_weights[j])
+            deserialized_weight = deserialize_single_weights(bytestring)
             layer_weights_list.append(omegas[i] * deserialized_weight)
         averaged_weights.append(sum(layer_weights_list) / sum(omegas))
     return averaged_weights
