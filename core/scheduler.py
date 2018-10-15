@@ -6,6 +6,7 @@ from threading import Event, Timer
 from multiprocessing import Pool
 
 from core.utils.dmljob import DMLJob
+from core.utils.event_types import RawEventTypes
 from core.runner import DMLRunner
 from core.configuration import ConfigurationManager
 
@@ -25,11 +26,12 @@ class DMLScheduler(object):
 
 	"""
 
-	def __init__(self, config_manager):
+	def __init__(self, config_manager, communication_manager):
 		"""
 		Initializes the instance.
 		"""
 		logging.info("Setting up scheduler...")
+		self.communication_manager = communication_manager
 		self.queue = deque()
 		self.event = Event()
 		self.processed = []
@@ -106,6 +108,10 @@ class DMLScheduler(object):
 					self.history.append(finished_results)
 					self.current_jobs[i] = None
 					self.current_results[i] = None
+					self.communication_manager.inform(
+						RawEventTypes.RawEventTypes.value,
+						finished_results
+					)
 				elif finished_results.status == 'failed':
 					# If some error occurred
 					job_to_run = self.current_jobs[i]
