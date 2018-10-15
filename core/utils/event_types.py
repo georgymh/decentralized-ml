@@ -34,8 +34,8 @@ class ActionableEventTypes(Enum):
 
     This dictionary has to contain all possible states that an Optimizer can be in.
     """
-    SPLIT = "SPLIT"
-    TRAIN = "TRAIN"
+    SPLIT = "splitting"
+    TRAIN = "training"
     AVERAGE = "AVERAGE"
     COMMUNICATE = "COMMUNICATE"
     TERMINATE = "TERMINATE"

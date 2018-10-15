@@ -113,7 +113,7 @@ class CommunicationManager(object):
             event_type,
             RawEventTypes.NOTHING.value
         )
-        payload = self_event.get('payload', None)
+        payload = raw_event.get('payload', None)
         callback(payload)
 
     def _parse_and_run_callback(self, actionable_event):
@@ -126,6 +126,7 @@ class CommunicationManager(object):
         and sending the processed payload (which should be a DML Job) to the
         callback function, which will handle everything from there on.
         """
+        logging.info("payload received: {}".format(actionable_event))
         event_type = actionable_event.get('actionable_event_type', None)
         callback = self.ACTIONABLE_EVENT_TYPE_2_CALLBACK.get(
             event_type,
@@ -150,8 +151,6 @@ class CommunicationManager(object):
         session_id = payload.get('key')
         content = payload.get('content')
 
-        optimizer_params = content.get('optimizer_params')
-        serialized_job = content.get('serialized_job')
 
         self.optimizer = FederatedAveragingOptimizer(content)
         actionable_event = self.optimizer.kickoff()
@@ -163,6 +162,7 @@ class CommunicationManager(object):
 
         TO BE IMPLEMENTED.
         """
+        logging.info("going to transform and split now")
         pass
 
     def _schedule_job(self, payload):

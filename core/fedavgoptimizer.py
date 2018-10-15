@@ -2,14 +2,21 @@ from transitions import Machine
 from core.utils.event_types import ActionableEventTypes, RawEventTypes
 	
 class FederatedAveragingOptimizer(Machine):
-	# Define some states.
-	# TODO: Fix states so that they compile; move 'after=' to Machine.add_transition() in init method
-	def __init__(self, kwargs={}):
+	"""
+	Federated Averaging Optimizer
+
+	Implements the Federated Averaging algorithm (with some tweaks)
+	and acts as a "brain" for the Unix Service
+	"""
+	def __init__(self, content):
 		'''
 		Kwargs is a dictionary containing all the info needed to initialize the Optimizer.
 		This includes any number of properties such as thresholds, etc.
 		'''
-
+		kwargs = content.get('optimizer_params')
+		serialized_job = content.get('serialized_job')
+		# The Optimizer knows its job
+		self.serialized_job = serialized_job
 		# What have we accomplished today?
 		self.training_iterations = kwargs.get('training_iterations', 0)
 		self.listen_iterations = kwargs.get('listen_iterations', 0)
@@ -40,10 +47,12 @@ class FederatedAveragingOptimizer(Machine):
 		self.add_transition('listen_iter', '*', None, after='increment_listen_iter')
 		self.CALLBACKS = {
 			RawEventTypes.SPLIT.value: self.done_splitting,
-			RawEventTypes.SCHEDULE.value: self.handle_runner, 
+			RawEventTypes.JOB_FINISHED.value: self.handle_runner, 
 			RawEventTypes.NEW_WEIGHTS.value: self.handle_listen,
 			RawEventTypes.NOTHING.value: self.do_nothing,
+			RawEventTypes.TERMINATE.value: self.done_everything
 		}
+		
 		
 	def increment_train_iter(self):
 		'''
@@ -56,20 +65,29 @@ class FederatedAveragingOptimizer(Machine):
 		self.training_iterations += 1
 		if self.training_iterations >= self.train_bound:
 			self.done_training()
+			return self.state
+		else:
+			return "NOTHING"
 
 	def increment_listen_iter(self):
 		self.listen_iterations += 1
 		if self.listen_iterations >= self.listen_bound:
 			self.done_listening()
+			return self.state
+		else:
+			return "NOTHING"
 
-	def done_training(self):
-		'''
-		Optimizer is telling the CommMgr that it doesn't need to train anymore.
-		Now, the CommMgr should communicate these results.
-		'''
-		self.total_iterations += 1
-		if self.total_iterations >= self.total_bound:
-			self.done_everything()
+	# def done_training(self):
+	# 	'''
+	# 	Optimizer is telling the CommMgr that it doesn't need to train anymore.
+	# 	Now, the CommMgr should communicate these results.
+	# 	'''
+	# 	self.total_iterations += 1
+	# 	if self.total_iterations >= self.total_bound:
+	# 		self.done_everything()
+	# 		return self.state
+	# 	else:
+
 
 	def handle_runner(self, args=None):
 		'''
@@ -87,7 +105,9 @@ class FederatedAveragingOptimizer(Machine):
 		'''
 		This is dumb, for now.
 		'''
-		return self.state
+		actionable_event = {}
+		actionable_event['actionable_event_type'] = self.state
+		return actionable_event
 
 	def ask(self, payload):
 		return self.parse(payload)
@@ -104,87 +124,8 @@ class FederatedAveragingOptimizer(Machine):
 			callback = self.CALLBACKS[event_type]
 		callback(event)
 		event['actionable_event_type'] = self.state
+		event['job'] = self.serialized_job
 		return event
 
-	def configure(self, CommMgr):
-		# TODO: Determine whether this method is strictly necessary?
-		self.CommMgr = CommMgr 
 	def do_nothing(self, event):
 		print("NOTHING")
-'''
-Everything below this line is nonsense but should not be commented out!
-Ah...that's why it shouldn't be commented out.
-'''
-
-	# def schedule_job(self, job):
-	# 	'''
-	# 	Helper function to schedule a DMLJob via depdendency injection
-	# 	'''
-	# 	self.scheduler.add_job(job)
-	# 	# TODO: Get the result of the job back to the Comm. Mgr. 
-
-	# def make_job_from_event(self, event):
-	# 	return deserialize_job(event)
-		
-	# def get_model_with_addr(self, model_addr):
-	# 	'''
-	# 	This Optimizer has been sent the address of a model that it should pick up
-	# 	Use the IPFS method to deserialize the model (currently only Keras)
-	# 	'''
-	# 	# TODO: Be able to deserialize more than just Keras models
-	# 	return ipfs2keras(self.neural_network, model_addr)
-	
-	# def on_enter_training(self, event):
-	# 	model_addr = event.kwargs.get('model_addr')
-	# 	self.neural_network = self.get_model_with_addr(model_addr)
-	# 	print(self.model)
-		
-	# def on_exit_training(self, event):
-	# 	print("result of training {}".format(self.neural_network))
-		
-	# def is_valid(self, event):
-	# 	return True
-	
-	# def time_elapsed(self, event):
-	# 	return self.time >= self.time_threshold
-	
-	# def is_also_valid(self):
-	# 	return True
-
-
-
-	# def do_listening(self, event):
-	# 	'''
-	# 	Event data should be whatever model the Optimizer has just received.
-	# 	Optimizer is telling the CommMgr that it wants the CommMgr to remember this.
-	# 	But also, to keep listening.
-	# 	'''
-	# def do_training(self, event):
-	# 	'''
-	# 	Event data should be the model to train on.
-	# 	Optimizer is telling the CommMgr that it wants the CommMgr to train again.
-	# 	'''
-	# 	event['OptimizerEventType'] = OptimizerEventTypes.TRAIN.name
-	# 	return event
-	# 	# job = self.make_job_from_event(event)
-	# 	# # TODO: Get the result of the job back to this Optimizer so that it knows what to do
-	# 	# self.scheduler.add_job(job)
-
-	# def do_validating(self, event):
-	# 	'''
-	# 	Event data should be the model to validate on.
-	# 	Optimizer is telling the CommMgr that it wants the CommMgr to validate this model.
-	# 	NOT USED IN MVP.
-	# 	'''
-	# 	event['OptimizerEventType'] = OptimizerEventTypes.VALIDATE.name
-	# 	return event
-
-	# def do_averaging(self, event):
-	# 	'''
-	# 	When there are many models to be averaged, the Optimizer needs to validate them,
-	# 	and then do a weighted average.
-	# 	This is the second step; the average.
-	# 	'''
-	# 	# Get the weights
-	# 	event['OptimizerEventType'] = OptimizerEventTypes.AVERAGE.name
-	# 	return event
