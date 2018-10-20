@@ -2,6 +2,7 @@ import logging
 
 from core.utils.event_types import RawEventTypes, ActionableEventTypes, callback_handler
 from core.fedavgoptimizer import FederatedAveragingOptimizer
+from core.utils.dmljob import DMLJob
 
 
 logging.basicConfig(level=logging.DEBUG,
@@ -20,8 +21,6 @@ class CommunicationManager(object):
     information about sessions throughout the code.
 
     """
-
-    # Setup Methods
 
     def __init__(self, config_manager):
         """
@@ -48,6 +47,8 @@ class CommunicationManager(object):
             RawEventTypes.NOTHING.value: self._do_nothing,
         }
         logging.info("Communication Manager is set up!")
+
+    # Setup Methods
 
     def configure(self, scheduler):
         """
@@ -76,13 +77,20 @@ class CommunicationManager(object):
         """
         logging.info("Information has been received: type({})".format(event_type))
         if self.optimizer:
+            # We have an active session.
             event_type, payload = self.optimizer.ask(event_type, payload)
-            callback = callback_handler(event_type, self.ACTIONABLE_EVENT_TYPE_2_CALLBACK,
-            ActionableEventTypes.NOTHING.value)
+            callback = callback_handler(
+                event_type,
+                self.ACTIONABLE_EVENT_TYPE_2_CALLBACK,
+                ActionableEventTypes.NOTHING.value
+            )
         else:
             # We need to start a new session.
-            callback = callback_handler(event_type, self.RAW_EVENT_TYPE_2_CALLBACK,
-            RawEventTypes.NOTHING.value)
+            callback = callback_handler(
+                event_type,
+                self.RAW_EVENT_TYPE_2_CALLBACK,
+                RawEventTypes.NOTHING.value
+            )
         callback(payload)
 
     # Callbacks
@@ -96,14 +104,18 @@ class CommunicationManager(object):
         # NOTE: We removed the 'optimizer_type' argument since for the MVP we're
         # only considering the 'FederatedAveragingOptimizer' for now.
         # TODO: We need to incorporate session id's when we're ready.
-        logging.info("New optimizer session is being set up...{}".format(payload))
-        # session_id = payload.get('key')
+        logging.info("New optimizer session is being set up...")
         content = payload.get('content')
         self.optimizer = FederatedAveragingOptimizer(content)
+        logging.info("Optimizer session is set! Now doing kickoff...")
         event_type, payload = self.optimizer.kickoff()
-        callback = callback_handler(event_type, self.ACTIONABLE_EVENT_TYPE_2_CALLBACK,
-            ActionableEventTypes.NOTHING.value)
+        callback = callback_handler(
+            event_type,
+            self.ACTIONABLE_EVENT_TYPE_2_CALLBACK,
+            ActionableEventTypes.NOTHING.value
+        )
         callback(payload)
+        logging.info("Kickoff complete.")
 
     def _transform_and_split(self, payload):
         """
@@ -111,7 +123,7 @@ class CommunicationManager(object):
 
         TO BE IMPLEMENTED.
         """
-        logging.info("going to transform and split now")
+        logging.info("Transforming and splitting... (NOT IMPLEMENTED YET)")
         pass
 
     def _schedule_job(self, dmljob_obj):
@@ -120,7 +132,7 @@ class CommunicationManager(object):
         """
         if not self.scheduler:
             raise Exception("Communication Manager needs to be configured first!")
-        if not dmljob_obj:
+        if not dmljob_obj or not isinstance(dmljob_obj, DMLJob):
             raise Exception("Job is not valid!")
         self.scheduler.add_job(dmljob_obj)
 
