@@ -49,7 +49,6 @@ def bootstrap():
     # 6. Configure the Communication Manager with the components it talks to.
     communication_manager.configure(
         scheduler=scheduler,
-        listener=None, # TODO: Change me.
     )
 
     # 7. Wait for the threads to end.
