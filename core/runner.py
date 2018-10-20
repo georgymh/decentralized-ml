@@ -64,7 +64,7 @@ class DMLRunner(object):
             'DMLJob type ({0}) is not valid'.format(job.job_type)
         logging.info("Running job (type: {0})...".format(job.job_type))
         try:
-            if job.job_type == 'TRAIN':
+            if job.job_type.upper() == 'TRAIN':
                 new_weights, omega, train_stats = self._train(
                     job.serialized_model,
                     job.framework_type,
@@ -82,7 +82,7 @@ class DMLRunner(object):
                     },
                     error_message="",
                 )
-            elif job.job_type == 'VALIDATE':
+            elif job.job_type.upper() == 'VALIDATE':
                 val_stats = self._validate(
                      job.serialized_model,
                      job.framework_type,
@@ -98,7 +98,7 @@ class DMLRunner(object):
                     },
                     error_message="",
                 )
-            elif job.job_type == 'INITIALIZE':
+            elif job.job_type.upper() == 'INITIALIZE':
                 initial_weights = self._initialize_model(
                     job.serialized_model,
                     job.framework_type
@@ -111,7 +111,7 @@ class DMLRunner(object):
                     },
                     error_message="",
                 )
-            elif job.job_type == 'AVERAGE':
+            elif job.job_type.upper() == 'AVERAGE':
                 raise Exception("averaging is not yet supported!")
                 # TODO: Implement Averaging!
                 # averaged_weights = federated_averaging(job.list_of_serialized_weights)
@@ -123,7 +123,7 @@ class DMLRunner(object):
                 #     },
                 #     error_message=""
                 # )
-            elif job.job_type == 'COMMUNICATE':
+            elif job.job_type.upper() == 'COMMUNICATE':
                 raise Exception("communication is not yet supported!")
                 # TODO: Implement Communicate!
                 # results = DMLResult(
