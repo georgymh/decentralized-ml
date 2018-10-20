@@ -4,15 +4,16 @@ import uuid
 import time
 import os
 
+from core.configuration import ConfigurationManager
 from custom.keras import model_from_serialized, get_optimizer
 from data.iterators import count_datapoints
 from data.iterators import create_random_train_dataset_iterator
 from data.iterators import create_random_test_dataset_iterator
 from core.utils.keras import train_keras_model, validate_keras_model
 from core.utils.keras import serialize_weights
-from core.configuration import ConfigurationManager
 from core.utils.dmlresult import DMLResult
-from core.fed_learning import federated_averaging
+# from core.utils.federated_learning_utils import federated_averaging
+#       NOTE: Commented until the next PR is done.
 
 logging.basicConfig(level=logging.DEBUG,
                     format='[Runner] %(asctime)s %(levelname)s %(message)s')
@@ -33,6 +34,14 @@ class DMLRunner(object):
 
     """
 
+    SUPPORTED_JOB_TYPES = [
+        'TRAIN',
+        'VALIDATE',
+        'INITIALIZE',
+        'AVERAGE',
+        'COMMUNICATE'
+    ]
+
     def __init__(self, config_manager):
         """
         Sets up the unique identifier of the DML Runner and the local dataset path.
@@ -51,11 +60,11 @@ class DMLRunner(object):
 
         If the runner is already executing a job, it silently does nothing.
         """
-        assert job.job_type in ['train', 'validate', 'initialize', 'average', 'communicate'], \
+        assert job.job_type in SUPPORTED_JOB_TYPES, \
             'DMLJob type ({0}) is not valid'.format(job.job_type)
         logging.info("Running job (type: {0})...".format(job.job_type))
         try:
-            if job.job_type == 'train':
+            if job.job_type == 'TRAIN':
                 new_weights, omega, train_stats = self._train(
                     job.serialized_model,
                     job.framework_type,
@@ -63,7 +72,6 @@ class DMLRunner(object):
                     job.hyperparams,
                     job.label_column_name
                 )
-                # logging.info(train_stats)
                 results = DMLResult(
                     status='successful',
                     job=job,
@@ -74,7 +82,7 @@ class DMLRunner(object):
                     },
                     error_message="",
                 )
-            elif job.job_type == 'validate':
+            elif job.job_type == 'VALIDATE':
                 val_stats = self._validate(
                      job.serialized_model,
                      job.framework_type,
@@ -82,7 +90,6 @@ class DMLRunner(object):
                      job.hyperparams,
                      job.label_column_name
                 )
-                # logging.info(val_stats)
                 results = DMLResult(
                     status='successful',
                     job=job,
@@ -91,14 +98,11 @@ class DMLRunner(object):
                     },
                     error_message="",
                 )
-            elif job.job_type == 'initialize':
-                # NOTE: This shouldn't be used in BETA/PROD right now, only DEV!!!
+            elif job.job_type == 'INITIALIZE':
                 initial_weights = self._initialize_model(
                     job.serialized_model,
                     job.framework_type
                 )
-                # weights_in_bytes = serialize_weights(initial_weights)
-                # logging.info(initial_weights)
                 results = DMLResult(
                     status='successful',
                     job=job,
@@ -107,29 +111,31 @@ class DMLRunner(object):
                     },
                     error_message="",
                 )
-            elif job.job_type == 'average':
+            elif job.job_type == 'AVERAGE':
                 raise Exception("averaging is not yet supported!")
-                averaged_weights = federated_averaging(job.list_of_serialized_weights)
-                results = DMLResult(
-                    status='successful',
-                    job=job,
-                    results={
-                        'weights': averaged_weights
-                    },
-                    error_message=""
-                )
-            elif job.job_type == 'communicate':
-                assert False, "communication is not yet supported!"
-                results = DMLResult(
-                    status='successful',
-                    job=job,
-                    results={
-                        'weights': job.weights
-                    },
-                    error_message=""
-                )
+                # TODO: Implement Averaging!
+                # averaged_weights = federated_averaging(job.list_of_serialized_weights)
+                # results = DMLResult(
+                #     status='successful',
+                #     job=job,
+                #     results={
+                #         'weights': averaged_weights
+                #     },
+                #     error_message=""
+                # )
+            elif job.job_type == 'COMMUNICATE':
+                raise Exception("communication is not yet supported!")
+                # TODO: Implement Communicate!
+                # results = DMLResult(
+                #     status='successful',
+                #     job=job,
+                #     results={
+                #         'weights': job.weights
+                #     },
+                #     error_message=""
+                # )
         except Exception as e:
-            logging.error(str(e))
+            logging.error("RunnerError: " + str(e))
             results = DMLResult(
                 status='failed',
                 job=job,
