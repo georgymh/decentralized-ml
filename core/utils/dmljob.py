@@ -89,7 +89,7 @@ def deserialize_job(serialized_job):
     """
     rest = serialized_job['job_data']
     weights = None
-    if 'weights' in serialized_job:
+    if 'weights' in serialized_job and serialized_job['weights'] not is None:
         weights = deserialize_weights(serialized_job['weights'])
     return DMLJob(
         rest['job_type'],
