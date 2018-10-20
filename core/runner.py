@@ -60,7 +60,7 @@ class DMLRunner(object):
 
         If the runner is already executing a job, it silently does nothing.
         """
-        assert job.job_type in DMLRunner.SUPPORTED_JOB_TYPES, \
+        assert job.job_type.upper() in DMLRunner.SUPPORTED_JOB_TYPES, \
             'DMLJob type ({0}) is not valid'.format(job.job_type)
         logging.info("Running job (type: {0})...".format(job.job_type))
         try:
