@@ -20,6 +20,7 @@ class CommunicationManager(object):
     information about sessions throughout the code.
 
     """
+    
     # Setup Methods
 
     def __init__(self, config_manager):
@@ -58,7 +59,7 @@ class CommunicationManager(object):
         logging.info("Communication Manager is configured!")
 
     # Public methods
-    
+
     def inform(self, event_type, payload):
         """
         Method called by other modules to inform the Communication Manager about
@@ -66,7 +67,7 @@ class CommunicationManager(object):
 
         If there isn't an active optimizer, the commmgr will handle it
 
-        Else, payloads are relayed to the active optimizer which decides how 
+        Else, payloads are relayed to the active optimizer which decides how
         and to whom the Communication Manager should communicate the event/message.
 
         For example: A runner could inform the Communication Manager that the
