@@ -1,7 +1,7 @@
 import logging
+
 from core.utils.event_types import RawEventTypes, ActionableEventTypes, callback_handler
 from core.fedavgoptimizer import FederatedAveragingOptimizer
-# TODO: Need to import 'FederatedAveragingOptimizer' (@panda).
 
 
 logging.basicConfig(level=logging.DEBUG,
@@ -18,7 +18,9 @@ class CommunicationManager(object):
     Right now, the service can only have one session at a time. This will be
     reflected in the code by just having one optimizer property and no
     information about sessions throughout the code.
+
     """
+    # Setup Methods
 
     def __init__(self, config_manager):
         """
@@ -55,6 +57,8 @@ class CommunicationManager(object):
         self.scheduler = scheduler
         logging.info("Communication Manager is configured!")
 
+    # Public methods
+    
     def inform(self, event_type, payload):
         """
         Method called by other modules to inform the Communication Manager about
@@ -71,17 +75,16 @@ class CommunicationManager(object):
         """
         logging.info("Information has been received: type({})".format(event_type))
         if self.optimizer:
-            logging.info("Optimizer available. Asking optimizer...")
             event_type, payload = self.optimizer.ask(event_type, payload)
             callback = callback_handler(event_type, self.ACTIONABLE_EVENT_TYPE_2_CALLBACK,
             ActionableEventTypes.NOTHING.value)
         else:
-            # This happens when we need to start the session for the first time.
-            # We're passing a raw event.
-            logging.info("No optimizer available. This should be a create session.")
+            # We need to start a new session.
             callback = callback_handler(event_type, self.RAW_EVENT_TYPE_2_CALLBACK,
             RawEventTypes.NOTHING.value)
         callback(payload)
+
+    # Callbacks
 
     def _create_session(self, payload):
         """

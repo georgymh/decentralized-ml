@@ -1,6 +1,5 @@
-from transitions import Machine
 from core.utils.event_types import ActionableEventTypes, RawEventTypes, callback_handler
-from core.utils.dmljob import DMLJob, deserialize_job
+from core.utils.dmljob import deserialize_job
 from core.utils.dmlresult import DMLResult
 
 class FederatedAveragingOptimizer(object):
@@ -9,12 +8,13 @@ class FederatedAveragingOptimizer(object):
 
 	Implements the Federated Averaging algorithm (with some tweaks)
 	and acts as a "brain" for the Unix Service
+
 	"""
-	def __init__(self, content={}):
-		'''
+	def __init__(self, content):
+		"""
 		Kwargs is a dictionary containing all the info needed to initialize the Optimizer.
 		This includes any number of properties such as thresholds, etc.
-		'''
+		"""
 		kwargs = content.get('optimizer_params')
 		serialized_job = content.get('serialized_job')
 		# The Optimizer knows its job
@@ -87,6 +87,7 @@ class FederatedAveragingOptimizer(object):
 		serialized_weights = payload["content"]
 		job.add_weights(serialized_weights)
 		return ActionableEventTypes.SCHEDULE_JOB.value, job
+	
 	def _done_training(self, payload):
 		"""
 		Level 2 Callback to handle a DMLResult of a training job
@@ -95,6 +96,7 @@ class FederatedAveragingOptimizer(object):
 		job = self.job
 		job.job_type = "communicate"
 		return ActionableEventTypes.SCHEDULE_JOB.value, job
+	
 	def _done_initializing(self, payload):
 		"""
 		Level 2 Callback to handle a DMLResult of an initialization job
@@ -103,11 +105,13 @@ class FederatedAveragingOptimizer(object):
 		job = self.job
 		job.job_type = "train"
 		return ActionableEventTypes.SCHEDULE_JOB.value, job
+	
 	def _done_everything(self, payload):
 		"""
 		Level 2 Callback to terminate session
 		"""
 		return ActionableEventTypes.TERMINATE.value, None
+	
 	def _average_iter(self, payload):
 		"""
 		Level 2 Callback to handle a DMLResult of an averaging job
@@ -123,8 +127,7 @@ class FederatedAveragingOptimizer(object):
 
 	def kickoff(self):
 		"""
-		Kickoff method for the FedAvgOptimizer. Probably can be merged into
-		something else.
+		Kickoff method for the FedAvgOptimizer. 
 		"""
 		return ActionableEventTypes.SCHEDULE_JOB.value, self.job
 
@@ -132,11 +135,10 @@ class FederatedAveragingOptimizer(object):
 		"""
 		Parses an event dictionary into a level 1 callback.
 		If the callback is not defined, it does nothing.
+		Otherwise, calls the callback.
 		"""
-		# print(event_type)
 		callback = callback_handler(event_type, self.LEVEL_1_CALLBACKS)
-		# Set the job of the event to be the current DMLJob
 		return callback(payload)
 
-	def do_nothing(self, event):
-		print("NOTHING")
+	def do_nothing(self, payload):
+		pass
