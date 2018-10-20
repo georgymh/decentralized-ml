@@ -42,6 +42,13 @@ class DMLJob(object):
         self.label_column_name = label_column_name
 
     def add_weights(self, serialized_weights):
+        """
+        DO NOT USE
+
+        TODO: Need to write a docstring for this (@panda), and we need to
+        change this function to a better design if it's going to be used for
+        the average routine (this will be done in the subsequent PRs).
+        """
         self.serialized_weights = serialized_weights
 
 
