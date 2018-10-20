@@ -132,7 +132,7 @@ class CommunicationManager(object):
         """
         if not self.scheduler:
             raise Exception("Communication Manager needs to be configured first!")
-        if not dmljob_obj or not isinstance(dmljob_obj, DMLJob):
+        if not isinstance(dmljob_obj, DMLJob):
             raise Exception("Job is not valid!")
         self.scheduler.add_job(dmljob_obj)
 
