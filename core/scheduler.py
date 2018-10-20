@@ -104,7 +104,6 @@ class DMLScheduler(object):
 				finished_results = self.current_results[i].get()
 				if finished_results.status == 'successful':
 					# If the job finished successfully...
-					logging.info("good boi")
 					self.processed.append(finished_results)
 					self.history.append(finished_results)
 					self.current_jobs[i] = None
@@ -115,7 +114,6 @@ class DMLScheduler(object):
 					)
 				elif finished_results.status == 'failed':
 					# If some error occurred
-					logging.info("bad boi")
 					job_to_run = self.current_jobs[i]
 					job_to_run.num_tries_left -= 1
 					if job_to_run.num_tries_left > 0:
