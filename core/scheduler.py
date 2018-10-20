@@ -5,10 +5,10 @@ from collections import deque
 from threading import Event, Timer
 from multiprocessing import Pool
 
-from core.utils.dmljob import DMLJob
-from core.utils.event_types import RawEventTypes
 from core.runner import DMLRunner
 from core.configuration import ConfigurationManager
+from core.utils.dmljob import DMLJob
+from core.utils.event_types import RawEventTypes
 
 
 logging.basicConfig(level=logging.DEBUG,
