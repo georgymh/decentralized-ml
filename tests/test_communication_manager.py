@@ -28,7 +28,7 @@ def make_initialize_job(model_json):
         model_json,
         "keras",
         hyperparams=make_hyperparams(),
-        label_index=0
+        label_column_name='label'
     )
     return initialize_job
 
@@ -40,6 +40,11 @@ def make_hyperparams():
         'split': 0.004,
     }
     return hyperparams
+
+config_manager = ConfigurationManager()
+config_manager.bootstrap(
+    config_filepath='tests/artifacts/communication_manager/configuration.ini'
+)
 
 def test_communication_manager_can_initialize_and_train_model():
     """
@@ -60,10 +65,6 @@ def test_communication_manager_can_initialize_and_train_model():
     (15) Exception raised, since communication job is not implemented
     NOTE: No, I can't split this up. IDK why exactly but it hangs forever.
     """
-    config_manager = ConfigurationManager()
-    config_manager.bootstrap(
-        config_filepath='tests/artifacts/configuration.ini'
-    )
     communication_manager = CommunicationManager(config_manager)
     scheduler = DMLScheduler(config_manager, communication_manager)
     scheduler.reset()
@@ -88,10 +89,6 @@ def test_communication_manager_can_initialize_and_train_model():
     # except AssertionError as e:
     #     assert str(e) == "communication is not yet supported!"
 def test_communication_manager_can_be_initialized():
-    config_manager = ConfigurationManager()
-    config_manager.bootstrap(
-        config_filepath='tests/artifacts/configuration.ini'
-    )
     communication_manager = CommunicationManager(config_manager)
     assert communication_manager is not None
 
@@ -100,10 +97,6 @@ def test_communication_manager_creates_new_sessions():
     Takes in initialized_communication_manager because the initialization is all that matters.
     Ensures that upon receiving an initialization job, the commmgr will make an optimizer.
     """
-    config_manager = ConfigurationManager()
-    config_manager.bootstrap(
-        config_filepath='tests/artifacts/configuration.ini'
-    )
     communication_manager = CommunicationManager(config_manager)
     scheduler = DMLScheduler(config_manager, communication_manager)
     scheduler.reset()
@@ -120,10 +113,6 @@ def test_communication_manager_fails_if_not_configured():
     """
     Ensures that commmgr won't be able to function if it's not configured
     """
-    config_manager = ConfigurationManager()
-    config_manager.bootstrap(
-        config_filepath='tests/artifacts/configuration.ini'
-    )
     communication_manager = CommunicationManager(config_manager)
     new_session_event = {
             "key": None, 
@@ -140,10 +129,6 @@ def test_communication_manager_can_inform_the_optimizer():
     """
     Ensures that commmgr can tell the optimizer of something, and that the job will transfer
     """
-    config_manager = ConfigurationManager()
-    config_manager.bootstrap(
-        config_filepath='tests/artifacts/configuration.ini'
-    )
     communication_manager = CommunicationManager(config_manager)
     scheduler = DMLScheduler(config_manager, communication_manager)
     scheduler.reset()
@@ -161,7 +146,7 @@ def test_communication_manager_can_inform_the_optimizer():
     assert opt_job.serialized_model == true_job.serialized_model
     assert opt_job.framework_type == true_job.framework_type
     assert opt_job.hyperparams == true_job.hyperparams
-    assert opt_job.label_index == true_job.label_index
+    assert opt_job.label_column_name == true_job.label_column_name
 
 
 

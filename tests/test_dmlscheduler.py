@@ -15,7 +15,7 @@ from core.communication_manager import CommunicationManager
 
 config_manager = ConfigurationManager()
 config_manager.bootstrap(
-    config_filepath='tests/artifacts/configuration.ini'
+    config_filepath='tests/artifacts/runner_scheduler/configuration.ini'
 )
 communication_manager = CommunicationManager(config_manager)
 scheduler = DMLScheduler(config_manager, communication_manager)
