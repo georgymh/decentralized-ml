@@ -20,7 +20,7 @@ class CommunicationManager(object):
     information about sessions throughout the code.
 
     """
-    
+
     # Setup Methods
 
     def __init__(self, config_manager):
@@ -33,7 +33,6 @@ class CommunicationManager(object):
                               # one session at a time, the class is only
                               # concerned with one optimizer.
         self.scheduler = None
-        logging.info("Communication Manager is set up!")
         self.ACTIONABLE_EVENT_TYPE_2_CALLBACK = {
             ActionableEventTypes.SCHEDULE_JOB.value: self._schedule_job,
             ActionableEventTypes.TERMINATE.value: self._terminate_session,
@@ -48,6 +47,7 @@ class CommunicationManager(object):
             RawEventTypes.TERMINATE.value: self._do_nothing,
             RawEventTypes.NOTHING.value: self._do_nothing,
         }
+        logging.info("Communication Manager is set up!")
 
     def configure(self, scheduler):
         """
