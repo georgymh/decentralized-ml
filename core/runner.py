@@ -232,6 +232,6 @@ class DMLRunner(object):
         logging.info("Initializing model...")
         if framework_type == 'keras':
             model = model_from_serialized(serialized_model)
-            model.summary()
+            #model.summary()
             initial_weights = model.get_weights()
         return initial_weights
