@@ -143,7 +143,7 @@ class DMLRunner(object):
                 results={},
             )
         self.current_job = None
-        logging.info("Finished running job!")
+        logging.info("Finished running job! (type: {0})".format(job.job_type))
         return results
 
     def _train(self, serialized_model, framework_type, initial_weights, hyperparams,
