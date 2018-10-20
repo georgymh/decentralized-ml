@@ -21,7 +21,7 @@ class DMLJob(object):
         label_index=None
         ):
         """
-        Initializes a DML Result object.
+        Initializes a DML Job object.
 
         Args:
             job_type (str): the job type.
@@ -40,6 +40,9 @@ class DMLJob(object):
         self.weights = weights
         self.hyperparams = hyperparams
         self.label_index = label_index
+    
+    def add_weights(self, serialized_weights):
+        self.serialized_weights = serialized_weights
 
 
 def serialize_job(dmljob_obj):
@@ -62,7 +65,7 @@ def serialize_job(dmljob_obj):
     return {
         'weights': serialize_weights(dmljob_obj.weights),
         'job_data': rest
-    }
+    } if dmljob_obj.weights else {'job_data': rest}
 
 def deserialize_job(serialized_job):
     """
@@ -79,7 +82,7 @@ def deserialize_job(serialized_job):
         rest['job_type'],
         rest['serialized_model'],
         rest['framework_type'],
-        deserialize_weights(serialized_job['weights']),
+        deserialize_weights(serialized_job['weights']) if serialized_job.get('weights', None) else None,
         rest['hyperparams'],
         rest['label_index']
     )

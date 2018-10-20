@@ -11,13 +11,14 @@ from models.keras_perceptron    import KerasPerceptron
 from core.utils.dmljob          import DMLJob
 from core.scheduler             import DMLScheduler
 from core.configuration         import ConfigurationManager
-
+from core.communication_manager import CommunicationManager
 
 config_manager = ConfigurationManager()
 config_manager.bootstrap(
     config_filepath='tests/artifacts/configuration.ini'
 )
-scheduler = DMLScheduler(config_manager)
+communication_manager = CommunicationManager(config_manager)
+scheduler = DMLScheduler(config_manager, communication_manager)
 
 
 def make_model_json():
@@ -52,7 +53,7 @@ def test_dmlscheduler_sanity():
         time.sleep(0.1)
         scheduler.runners_run_next_jobs()
     output = scheduler.processed.pop(0)
-    initial_weights = output.results['initial_weights']
+    initial_weights = output.results['weights']
     assert type(initial_weights) == list
     assert type(initial_weights[0]) == np.ndarray
 
@@ -82,7 +83,7 @@ def test_dmlscheduler_arbitrary_scheduling():
     assert len(scheduler.processed) == 5
     while scheduler.processed:
         output = scheduler.processed.pop(0)
-        initial_weights = output.results['initial_weights']
+        initial_weights = output.results['weights']
         assert type(initial_weights) == list
         assert type(initial_weights[0]) == np.ndarray
 
@@ -103,6 +104,6 @@ def test_dmlscheduler_cron():
     assert len(scheduler.processed) == 3
     while scheduler.processed:
         output = scheduler.processed.pop(0)
-        initial_weights = output.results['initial_weights']
+        initial_weights = output.results['weights']
         assert type(initial_weights) == list
         assert type(initial_weights[0]) == np.ndarray

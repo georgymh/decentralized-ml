@@ -104,16 +104,18 @@ class DMLScheduler(object):
 				finished_results = self.current_results[i].get()
 				if finished_results.status == 'successful':
 					# If the job finished successfully...
+					logging.info("good boi")
 					self.processed.append(finished_results)
 					self.history.append(finished_results)
 					self.current_jobs[i] = None
 					self.current_results[i] = None
 					self.communication_manager.inform(
-						RawEventTypes.RawEventTypes.value,
+						RawEventTypes.JOB_DONE.value,
 						finished_results
 					)
 				elif finished_results.status == 'failed':
 					# If some error occurred
+					logging.info("bad boi")
 					job_to_run = self.current_jobs[i]
 					job_to_run.num_tries_left -= 1
 					if job_to_run.num_tries_left > 0:

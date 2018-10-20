@@ -20,8 +20,11 @@ class RawEventTypes(Enum):
     NEW_SESSION = "new_session"
     NEW_WEIGHTS = "new_weights"
     TERMINATE = "TERMINATE"
-    SPLIT = "done_splitting"
-    JOB_FINISHED = "JOB_FINISHED"
+    JOB_DONE = "JOB_DONE"
+    JOB_TRAIN = "train"
+    JOB_INIT = "initialize"
+    JOB_AVG = "average"
+    NEW_INFO = "NEW_INFO"
     NOTHING = "NOTHING"
 
 class ActionableEventTypes(Enum):
@@ -34,9 +37,19 @@ class ActionableEventTypes(Enum):
 
     This dictionary has to contain all possible states that an Optimizer can be in.
     """
-    SPLIT = "splitting"
-    TRAIN = "training"
-    AVERAGE = "AVERAGE"
-    COMMUNICATE = "COMMUNICATE"
+    SCHEDULE_JOB = "SCHEDULE_JOB"
     TERMINATE = "TERMINATE"
     NOTHING = "NOTHING"
+
+def callback_handler(callback_type, callback_dict, 
+                    default=RawEventTypes.NOTHING.value):
+    """
+    Helper function which returns a callback from a callback
+    dict when given a callback type.
+    """
+    assert isinstance(callback_dict, dict), \
+        "callback_dict was not a dict, it was {}".format(callback_dict)
+    callback = callback_dict[default]
+    if callback_type in callback_dict:
+        callback = callback_dict[callback_type]
+    return callback

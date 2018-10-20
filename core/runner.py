@@ -48,7 +48,7 @@ class DMLRunner(object):
 
         If the runner is already executing a job, it silently does nothing.
         """
-        assert job.job_type in ['train', 'validate', 'initialize'], \
+        assert job.job_type in ['train', 'validate', 'initialize', 'average', 'communicate'], \
             'DMLJob type ({0}) is not valid'.format(job.job_type)
         logging.info("Running job (type: {0})...".format(job.job_type))
         try:
@@ -65,7 +65,7 @@ class DMLRunner(object):
                     status='successful',
                     job=job,
                     results={
-                        'new_weights': new_weights,
+                        'weights': new_weights,
                         'omega': omega,
                         'train_stats': train_stats,
                     },
@@ -94,17 +94,18 @@ class DMLRunner(object):
                     job.serialized_model,
                     job.framework_type
                 )
-                weights_in_bytes = serialize_weights(initial_weights)
+                # weights_in_bytes = serialize_weights(initial_weights)
                 # logging.info(initial_weights)
                 results = DMLResult(
                     status='successful',
                     job=job,
                     results={
-                        'initial_weights': initial_weights,
+                        'weights': initial_weights,
                     },
                     error_message="",
                 )
             elif job.job_type == 'average':
+                raise Exception("averaging is not yet supported!")
                 averaged_weights = federated_averaging(job.list_of_serialized_weights)
                 results = DMLResult(
                     status='successful',
@@ -114,11 +115,21 @@ class DMLRunner(object):
                     },
                     error_message=""
                 )
+            elif job.job_type == 'communicate':
+                assert False, "communication is not yet supported!"
+                results = DMLResult(
+                    status='successful',
+                    job=job,
+                    results={
+                        'weights': job.weights
+                    },
+                    error_message=""
+                )
         except Exception as e:
             logging.error(str(e))
             results = DMLResult(
                 status='failed',
-                job=job.job,
+                job=job,
                 error_message=str(e),
                 results={},
             )
@@ -217,6 +228,6 @@ class DMLRunner(object):
         logging.info("Initializing model...")
         if framework_type == 'keras':
             model = model_from_serialized(serialized_model)
-            # model.summary()
+            model.summary()
             initial_weights = model.get_weights()
         return initial_weights
