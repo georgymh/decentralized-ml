@@ -24,8 +24,7 @@ class FederatedAveragingOptimizer(object):
 		logging.info("Setting up Optimizer")
 		kwargs = content.get('optimizer_params')
 		serialized_job = content.get('serialized_job')
-		# The Optimizer knows its job
-		self.job = deserialize_job(serialized_job)
+		self.job = deserialize_job(serialized_job) # The Optimizer knows its job
 		self.listen_iterations = kwargs.get('listen_iterations', 0)
 		self.listen_bound = kwargs.get('listen_bound', 1)
 		self.LEVEL_1_CALLBACKS = {
@@ -104,6 +103,7 @@ class FederatedAveragingOptimizer(object):
 		"""
 		Level 2 Callback to handle new weights info
 		Updates state and then returns appropriate DMLJob
+		Will change in next PR
 		"""
 		job = self.job
 		job.job_type = JobEventTypes.JOB_AVG.name
@@ -142,6 +142,7 @@ class FederatedAveragingOptimizer(object):
 		Level 2 Callback to handle a DMLResult of an averaging job
 		Should only return a DMLJob of type Train if averaging is done
 		Currently, we'll only support one round of fed. learning
+		Will change in next PR
 		"""
 		job = self.job
 		self.listen_iterations += 1
@@ -153,4 +154,4 @@ class FederatedAveragingOptimizer(object):
 			return ActionableEventTypes.NOTHING.name, None
 
 	def _do_nothing(self, payload):
-		pass
+		return None, None

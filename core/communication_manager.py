@@ -1,7 +1,7 @@
 import logging
 
 from core.utils.event_types import RawEventTypes, ActionableEventTypes, callback_handler
-from core.fedavgoptimizer import FederatedAveragingOptimizer
+from core.fed_avg_optimizer import FederatedAveragingOptimizer
 from core.utils.dmljob import DMLJob
 
 
