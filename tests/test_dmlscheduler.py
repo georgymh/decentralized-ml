@@ -11,6 +11,7 @@ from core.configuration         import ConfigurationManager
 from core.communication_manager import CommunicationManager
 from tests.testing_utils        import make_initialize_job, make_model_json
 
+
 config_manager = ConfigurationManager()
 config_manager.bootstrap(
     config_filepath='tests/artifacts/runner_scheduler/configuration.ini'

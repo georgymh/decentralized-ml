@@ -16,9 +16,9 @@ from core.utils.event_types import JobEventTypes, callback_handler
 # from core.utils.federated_learning_utils import federated_averaging
 #       NOTE: Commented until the next PR is done.
 
+
 logging.basicConfig(level=logging.DEBUG,
                     format='[Runner] %(asctime)s %(levelname)s %(message)s')
-
 
 class DMLRunner(object):
     """

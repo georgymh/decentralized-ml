@@ -9,6 +9,7 @@ from core.utils.keras           import serialize_weights
 from core.utils.event_types     import JobEventTypes
 from tests.testing_utils        import make_initialize_job, make_model_json, make_train_job, make_validate_job, make_hyperparams
 
+
 @pytest.fixture
 def config_manager():
     config_manager = ConfigurationManager()
