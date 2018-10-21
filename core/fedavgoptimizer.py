@@ -64,6 +64,7 @@ class FederatedAveragingOptimizer(object):
 	def _handle_job_done(self, result):
 		"""
 		Level 1 Callback to handle the payload of a DMLResult
+		Parses job.job_type into Level 2 Callback
 		Also updates the weights
 		"""
 		assert isinstance(result, DMLResult)
