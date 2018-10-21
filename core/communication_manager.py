@@ -66,7 +66,7 @@ class CommunicationManager(object):
         Method called by other modules to inform the Communication Manager about
         events that are going on in the service.
 
-        If there isn't an active optimizer, the commmgr will handle it
+        If there isn't an active optimizer, the Communication Manager will handle it
 
         Else, payloads are relayed to the active optimizer which decides how
         and to whom the Communication Manager should communicate the event/message.

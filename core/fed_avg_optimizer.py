@@ -6,7 +6,8 @@ from core.utils.keras import serialize_weights
 from core.utils.dmlresult import DMLResult
 
 logging.basicConfig(level=logging.DEBUG,
-format='[CommunicationManager] %(asctime)s %(levelname)s %(message)s')
+	format='[FedAvgOpt] %(asctime)s %(levelname)s %(message)s')
+
 
 class FederatedAveragingOptimizer(object):
 	"""

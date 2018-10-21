@@ -17,20 +17,20 @@ config_manager.bootstrap(
 
 def test_communication_manager_can_initialize_and_train_model():
     """
-    (1) CommMgr receives the packet it's going to receive from BlockchainGateway
-    (2) CommMgr gives packet to Optimizer
-    (3) Optimizer tells CommMgr to schedule an initialization job
-    (4) CommMgr schedules initialization job
-    (5) CommMgr receives DMLResult for initialization job
-    (6) CommMgr gives DMLResult to Optimizer
+    (1) Communication Manager receives the packet it's going to receive from BlockchainGateway
+    (2) Communication Manager gives packet to Optimizer
+    (3) Optimizer tells Communication Manager to schedule an initialization job
+    (4) Communication Manager schedules initialization job
+    (5) Communication Manager receives DMLResult for initialization job
+    (6) Communication Manager gives DMLResult to Optimizer
     (7) Optimizer updates its weights to initialized model
-    (8) Optimizer tells CommMgr to schedule a training job
-    (9) CommMgr schedules training job
-    (10) CommMgr receives DMLResult for training job
-    (11) CommMgr gives DMLResult to Optimizer
+    (8) Optimizer tells Communication Manager to schedule a training job
+    (9) Communication Manager schedules training job
+    (10) Communication Manager receives DMLResult for training job
+    (11) Communication Manager gives DMLResult to Optimizer
     (12) Optimizer updates its weights to trained weights
-    (13) Optimizer tells CommMgr to schedule a communication job
-    (14) CommMgr schedules communication job
+    (13) Optimizer tells Communication Manager to schedule a communication job
+    (14) Communication Manager schedules communication job
     (15) Exception raised, since communication job is not implemented
     NOTE: No, I can't split this up. IDK why exactly but it hangs forever.
     """
@@ -60,7 +60,7 @@ def test_communication_manager_can_be_initialized():
 def test_communication_manager_creates_new_sessions():
     """
     Takes in initialized_communication_manager because the initialization is all that matters.
-    Ensures that upon receiving an initialization job, the commmgr will make an optimizer.
+    Ensures that upon receiving an initialization job, the Communication Manager will make an optimizer.
     """
     communication_manager = CommunicationManager(config_manager)
     scheduler = DMLScheduler(config_manager, communication_manager)
@@ -78,7 +78,7 @@ def test_communication_manager_creates_new_sessions():
 
 def test_communication_manager_fails_if_not_configured():
     """
-    Ensures that commmgr won't be able to function if it's not configured
+    Ensures that Communication Manager won't be able to function if it's not configured
     """
     communication_manager = CommunicationManager(config_manager)
     serialized_job = make_serialized_job()
@@ -97,7 +97,7 @@ def test_communication_manager_fails_if_not_configured():
 
 def test_communication_manager_can_inform_the_optimizer():
     """
-    Ensures that commmgr can tell the optimizer of something, and that the job will transfer
+    Ensures that Communication Manager can tell the optimizer of something, and that the job will transfer
     """
     communication_manager = CommunicationManager(config_manager)
     scheduler = DMLScheduler(config_manager, communication_manager)
