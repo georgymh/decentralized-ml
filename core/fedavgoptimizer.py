@@ -21,6 +21,7 @@ class FederatedAveragingOptimizer(object):
 		Kwargs is a dictionary containing all the info needed to initialize the Optimizer.
 		This includes any number of properties such as thresholds, etc.
 		"""
+		logging.info("Setting up Optimizer")
 		kwargs = content.get('optimizer_params')
 		serialized_job = content.get('serialized_job')
 		# The Optimizer knows its job
@@ -28,8 +29,8 @@ class FederatedAveragingOptimizer(object):
 		self.listen_iterations = kwargs.get('listen_iterations', 0)
 		self.listen_bound = kwargs.get('listen_bound', 1)
 		self.LEVEL_1_CALLBACKS = {
-			RawEventTypes.JOB_DONE.name: self.handle_job_done,
-			RawEventTypes.NEW_INFO.name: self.handle_new_info,
+			RawEventTypes.JOB_DONE.name: self._handle_job_done,
+			RawEventTypes.NEW_INFO.name: self._handle_new_info,
 			RawEventTypes.NOTHING.name: self.do_nothing,
 		}
 		self.LEVEL_2_JOB_CALLBACKS = {
@@ -43,22 +44,22 @@ class FederatedAveragingOptimizer(object):
 			RawEventTypes.TERMINATE.name: self._terminate_session,
 			RawEventTypes.NOTHING.name: self.do_nothing,
 		}
+		logging.info("Optimizer has been set up!")
 
-	def handle_job_done(self, result):
+	def _handle_job_done(self, result):
 		"""
 		Level 1 Callback to handle the payload of a DMLResult
+		Also updates the weights
 		"""
-		# assert payload is a DMLResult
 		assert isinstance(result, DMLResult)
 		# assume success for now
-		# get the DMLJob from the DMLResult
 		new_weights = result.results.get('weights')
 		self._update_weights(new_weights)
 		job_type = result.job.job_type
 		callback = callback_handler(job_type, self.LEVEL_2_JOB_CALLBACKS)
 		return callback(result)
 
-	def handle_new_info(self, payload):
+	def _handle_new_info(self, payload):
 		"""
 		Level 1 Callback to handle the info from the network
 		Case 1: New weights
@@ -125,7 +126,6 @@ class FederatedAveragingOptimizer(object):
 		Level 2 Callback to handle a DMLResult of an averaging job
 		Should only return a DMLJob of type Train if averaging is done
 		"""
-		logging.info("why am i here")
 		job = self.job
 		self.listen_iterations += 1
 		if self.listen_iterations > self.listen_bound:

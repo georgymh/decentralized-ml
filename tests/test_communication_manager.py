@@ -61,7 +61,6 @@ def test_communication_manager_creates_new_sessions():
     """
     communication_manager = CommunicationManager(config_manager)
     scheduler = DMLScheduler(config_manager, communication_manager)
-    scheduler.reset()
     communication_manager.configure(scheduler)
     serialized_job = make_serialized_job()
     new_session_event = {
@@ -99,7 +98,6 @@ def test_communication_manager_can_inform_the_optimizer():
     """
     communication_manager = CommunicationManager(config_manager)
     scheduler = DMLScheduler(config_manager, communication_manager)
-    scheduler.reset()
     communication_manager.configure(scheduler)
     true_job = make_initialize_job(make_model_json())
     serialized_job = serialize_job(true_job)
@@ -135,7 +133,6 @@ def test_communication_manager_can_inform_the_optimizer():
 #     """
 #     communication_manager = CommunicationManager(config_manager)
 #     scheduler = DMLScheduler(config_manager, communication_manager)
-#     scheduler.reset()
 #     communication_manager.configure(scheduler)
 #     true_job = make_initialize_job(make_model_json())
 #     serialized_job = serialize_job(true_job)
