@@ -40,7 +40,7 @@ class FederatedAveragingOptimizer(object):
 		}
 		self.LEVEL_2_INFO_CALLBACKS = {
 			RawEventTypes.NEW_WEIGHTS.name: self._handle_new_weights,
-			RawEventTypes.TERMINATE.name: self._done_everything,
+			RawEventTypes.TERMINATE.name: self._terminate_session,
 			RawEventTypes.NOTHING.name: self.do_nothing,
 		}
 
@@ -114,7 +114,7 @@ class FederatedAveragingOptimizer(object):
 		job.job_type = JobEventTypes.JOB_TRAIN.name
 		return ActionableEventTypes.SCHEDULE_JOB.name, job
 	
-	def _done_everything(self, payload):
+	def _terminate_session(self, payload):
 		"""
 		Level 2 Callback to terminate session
 		"""
