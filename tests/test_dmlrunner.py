@@ -21,9 +21,10 @@ def test_dmlrunner_initialize_job_returns_list_of_nparray(config_manager):
     model_json = make_model_json()
     runner = DMLRunner(config_manager)
     initialize_job = make_initialize_job(model_json)
-    results = runner.run_job(initialize_job)
+    result = runner.run_job(initialize_job)
+    results = result.results
     initial_weights = results['weights']
-    assert results.job.job_type is JobEventTypes.JOB_INIT
+    assert result.job.job_type is JobEventTypes.JOB_INIT.name
     assert type(initial_weights) == list
     assert type(initial_weights[0]) == np.ndarray
 
@@ -35,11 +36,12 @@ def test_dmlrunner_train_job_returns_weights_omega_and_stats(config_manager):
     initialize_job = make_initialize_job(model_json)
     initial_weights = runner.run_job(initialize_job).results['weights']
     train_job = make_train_job(model_json, initial_weights, hyperparams)
-    results = runner.run_job(train_job).results
+    result = runner.run_job(train_job)
+    results = result.results
     new_weights = results['weights']
     omega = results['omega']
     train_stats = results['train_stats']
-    assert results.job.job_type is JobEventTypes.JOB_TRAIN
+    assert result.job.job_type is JobEventTypes.JOB_TRAIN.name
     assert type(new_weights) == list
     assert type(new_weights[0]) == np.ndarray
     assert type(omega) == int or type(omega) == float
@@ -53,12 +55,15 @@ def test_dmlrunner_validate_job_returns_stats(config_manager):
     initialize_job = make_initialize_job(make_model_json())
     initial_weights = runner.run_job(initialize_job).results['weights']
     train_job = make_train_job(model_json, initial_weights, hyperparams)
-    results = runner.run_job(train_job).results
-    assert results.job.job_type is JobEventTypes.JOB_VAL
+    result = runner.run_job(train_job)
+    results = result.results
     new_weights = results['weights']
     omega = results['omega']
     train_stats = results['train_stats']
     hyperparams['split'] = 1 - hyperparams['split']
     validate_job = make_validate_job(model_json, new_weights, hyperparams)
-    val_stats = runner.run_job(validate_job).results['val_stats']
+    result = runner.run_job(validate_job)
+    results = result.results
+    val_stats = results['val_stats']
+    assert result.job.job_type is JobEventTypes.JOB_VAL.name
     assert type(val_stats) == dict
