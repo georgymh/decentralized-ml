@@ -89,7 +89,7 @@ def test_communication_manager_fails_if_not_configured():
     }
     try:
         communication_manager.inform(RawEventTypes.NEW_SESSION.name, new_session_event)
-        assert False, "This should have raised an exception"
+        raise Exception("This should have raised an exception")
     except Exception as e:
         assert str(e) == "Communication Manager needs to be configured first!"
 
