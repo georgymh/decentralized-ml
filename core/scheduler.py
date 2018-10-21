@@ -109,7 +109,7 @@ class DMLScheduler(object):
 					self.current_jobs[i] = None
 					self.current_results[i] = None
 					self.communication_manager.inform(
-						RawEventTypes.JOB_DONE.value,
+						RawEventTypes.JOB_DONE.name,
 						finished_results
 					)
 				elif finished_results.status == 'failed':

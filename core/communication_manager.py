@@ -33,18 +33,18 @@ class CommunicationManager(object):
                               # concerned with one optimizer.
         self.scheduler = None
         self.ACTIONABLE_EVENT_TYPE_2_CALLBACK = {
-            ActionableEventTypes.SCHEDULE_JOB.value: self._schedule_job,
-            ActionableEventTypes.TERMINATE.value: self._terminate_session,
-            ActionableEventTypes.NOTHING.value: self._do_nothing,
+            ActionableEventTypes.SCHEDULE_JOB.name: self._schedule_job,
+            ActionableEventTypes.TERMINATE.name: self._terminate_session,
+            ActionableEventTypes.NOTHING.name: self._do_nothing,
         }
 
         # These are unmapped and will only be received when an optimizer is not
         # active.
         self.RAW_EVENT_TYPE_2_CALLBACK = {
-            RawEventTypes.NEW_SESSION.value: self._create_session,
-            RawEventTypes.NEW_WEIGHTS.value: self._do_nothing,
-            RawEventTypes.TERMINATE.value: self._do_nothing,
-            RawEventTypes.NOTHING.value: self._do_nothing,
+            RawEventTypes.NEW_SESSION.name: self._create_session,
+            RawEventTypes.NEW_WEIGHTS.name: self._do_nothing,
+            RawEventTypes.TERMINATE.name: self._do_nothing,
+            RawEventTypes.NOTHING.name: self._do_nothing,
         }
         logging.info("Communication Manager is set up!")
 
@@ -75,7 +75,7 @@ class CommunicationManager(object):
         node is done training a particular model, to which the Optimizer could
         decide it's time to communicate the new weights to the network.
         """
-        logging.info("Information has been received: type({})".format(event_type))
+        logging.info("Information has been received: {})".format(payload))
         if self.optimizer:
             # We have an active session.
             event_type, payload = self.optimizer.ask(event_type, payload)

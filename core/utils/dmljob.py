@@ -40,6 +40,7 @@ class DMLJob(object):
         self.weights = weights
         self.hyperparams = hyperparams
         self.label_column_name = label_column_name
+        self.list_of_serialized_weights = []
 
     def add_weights(self, serialized_weights):
         """

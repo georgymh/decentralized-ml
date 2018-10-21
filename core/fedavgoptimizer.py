@@ -1,6 +1,12 @@
-from core.utils.event_types import ActionableEventTypes, RawEventTypes, callback_handler
+import logging
+
+from core.utils.event_types import ActionableEventTypes, RawEventTypes, JobEventTypes, callback_handler
 from core.utils.dmljob import deserialize_job
+from core.utils.keras import serialize_weights
 from core.utils.dmlresult import DMLResult
+
+logging.basicConfig(level=logging.DEBUG,
+format='[CommunicationManager] %(asctime)s %(levelname)s %(message)s')
 
 class FederatedAveragingOptimizer(object):
 	"""
@@ -22,20 +28,20 @@ class FederatedAveragingOptimizer(object):
 		self.listen_iterations = kwargs.get('listen_iterations', 0)
 		self.listen_bound = kwargs.get('listen_bound', 1)
 		self.LEVEL_1_CALLBACKS = {
-			RawEventTypes.JOB_DONE.value: self.handle_job_done,
-			RawEventTypes.NEW_INFO.value: self.handle_new_info,
-			RawEventTypes.NOTHING.value: self.do_nothing,
+			RawEventTypes.JOB_DONE.name: self.handle_job_done,
+			RawEventTypes.NEW_INFO.name: self.handle_new_info,
+			RawEventTypes.NOTHING.name: self.do_nothing,
 		}
 		self.LEVEL_2_JOB_CALLBACKS = {
-			RawEventTypes.JOB_TRAIN.value: self._done_training,
-			RawEventTypes.JOB_INIT.value: self._done_initializing,
-			RawEventTypes.JOB_AVG.value: self._average_iter,
-			RawEventTypes.NOTHING.value: self.do_nothing,
+			JobEventTypes.JOB_TRAIN.name: self._done_training,
+			JobEventTypes.JOB_INIT.name: self._done_initializing,
+			JobEventTypes.JOB_AVG.name: self._average_iter,
+			JobEventTypes.NOTHING.name: self.do_nothing,
 		}
 		self.LEVEL_2_INFO_CALLBACKS = {
-			RawEventTypes.NEW_WEIGHTS.value: self._handle_new_weights,
-			RawEventTypes.TERMINATE.value: self._done_everything,
-			RawEventTypes.NOTHING.value: self.do_nothing,
+			RawEventTypes.NEW_WEIGHTS.name: self._handle_new_weights,
+			RawEventTypes.TERMINATE.name: self._done_everything,
+			RawEventTypes.NOTHING.name: self.do_nothing,
 		}
 
 	def handle_job_done(self, result):
@@ -83,10 +89,12 @@ class FederatedAveragingOptimizer(object):
 		Updates state and then returns appropriate DMLJob
 		"""
 		job = self.job
-		job.job_type = "average"
-		serialized_weights = payload["content"]
-		job.add_weights(serialized_weights)
-		return ActionableEventTypes.SCHEDULE_JOB.value, job
+		job.job_type = JobEventTypes.JOB_AVG.name
+		# serialized_weights = payload["content"]
+		# job.add_weights(serialized_weights)
+		# newly_serialized_weights = serialize_weights(job.weights)
+		# job.add_weights(newly_serialized_weights)
+		return ActionableEventTypes.SCHEDULE_JOB.name, job
 	
 	def _done_training(self, payload):
 		"""
@@ -94,8 +102,8 @@ class FederatedAveragingOptimizer(object):
 		Should return a DMLJob of type Communication
 		"""
 		job = self.job
-		job.job_type = "communicate"
-		return ActionableEventTypes.SCHEDULE_JOB.value, job
+		job.job_type = JobEventTypes.JOB_COMM.name
+		return ActionableEventTypes.SCHEDULE_JOB.name, job
 	
 	def _done_initializing(self, payload):
 		"""
@@ -103,33 +111,34 @@ class FederatedAveragingOptimizer(object):
 		Should return a DMLJob of type Train
 		"""
 		job = self.job
-		job.job_type = "train"
-		return ActionableEventTypes.SCHEDULE_JOB.value, job
+		job.job_type = JobEventTypes.JOB_TRAIN.name
+		return ActionableEventTypes.SCHEDULE_JOB.name, job
 	
 	def _done_everything(self, payload):
 		"""
 		Level 2 Callback to terminate session
 		"""
-		return ActionableEventTypes.TERMINATE.value, None
+		return ActionableEventTypes.TERMINATE.name, None
 	
 	def _average_iter(self, payload):
 		"""
 		Level 2 Callback to handle a DMLResult of an averaging job
 		Should only return a DMLJob of type Train if averaging is done
 		"""
+		logging.info("why am i here")
 		job = self.job
 		self.listen_iterations += 1
 		if self.listen_iterations > self.listen_bound:
-			job.job_type = "train"
-			return ActionableEventTypes.SCHEDULE_JOB.value, job
+			job.job_type = JobEventTypes.JOB_TRAIN.name
+			return ActionableEventTypes.SCHEDULE_JOB.name, job
 		else:
-			return ActionableEventTypes.NOTHING.value, None
+			return ActionableEventTypes.NOTHING.name, None
 
 	def kickoff(self):
 		"""
 		Kickoff method for the FedAvgOptimizer. 
 		"""
-		return ActionableEventTypes.SCHEDULE_JOB.value, self.job
+		return ActionableEventTypes.SCHEDULE_JOB.name, self.job
 
 	def ask(self, event_type, payload):
 		"""

@@ -6,12 +6,10 @@ import os
 import pytest
 import numpy as np
 
-from custom.keras               import get_optimizer
-from models.keras_perceptron    import KerasPerceptron
-from core.utils.dmljob          import DMLJob
 from core.scheduler             import DMLScheduler
 from core.configuration         import ConfigurationManager
 from core.communication_manager import CommunicationManager
+from tests.testing_utils        import make_initialize_job, make_model_json
 
 config_manager = ConfigurationManager()
 config_manager.bootstrap(
@@ -19,27 +17,6 @@ config_manager.bootstrap(
 )
 communication_manager = CommunicationManager(config_manager)
 scheduler = DMLScheduler(config_manager, communication_manager)
-
-
-def make_model_json():
-    m = KerasPerceptron(is_training=True)
-    model_architecture = m.model.to_json()
-    model_optimizer = get_optimizer(m.model)
-    model_json = {
-        "architecture": model_architecture,
-        "optimizer": model_optimizer
-    }
-    return model_json
-
-
-def make_initialize_job(model_json):
-    initialize_job = DMLJob(
-        "initialize",
-        model_json,
-        "keras"
-    )
-    return initialize_job
-
 
 def test_dmlscheduler_sanity():
     """

@@ -3,6 +3,17 @@ Communication Manager and the Optimizers."""
 
 from enum import Enum
 
+class JobEventTypes(Enum):
+    """
+    Enum to implement callback pattern for DMLRunner
+    """
+    JOB_TRAIN = "TRAIN"
+    JOB_VAL = "VALIDATE"
+    JOB_INIT = "INITIALIZE"
+    JOB_AVG = "AVERAGE"
+    JOB_COMM = "COMMUNICATE"
+    NOTHING = "NOTHING"
+
 class RawEventTypes(Enum):
     """
     Dictionary of events that the Optimizer might receive from the Communication
@@ -21,9 +32,6 @@ class RawEventTypes(Enum):
     NEW_WEIGHTS = "NEW_WEIGHTS"
     TERMINATE = "TERMINATE"
     JOB_DONE = "JOB_DONE"
-    JOB_TRAIN = "TRAIN"
-    JOB_INIT = "INITIALIZE"
-    JOB_AVG = "AVERAGE"
     NEW_INFO = "NEW_INFO"
     NOTHING = "NOTHING"
 

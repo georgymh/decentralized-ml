@@ -4,42 +4,11 @@ import pytest
 import time
 
 from core.communication_manager import CommunicationManager
-from core.utils.event_types     import RawEventTypes, ActionableEventTypes
 from core.runner                import DMLRunner
 from core.scheduler             import DMLScheduler
-from custom.keras               import get_optimizer
-from models.keras_perceptron    import KerasPerceptron
-from core.utils.dmljob          import DMLJob, serialize_job, deserialize_job
 from core.configuration         import ConfigurationManager
-
-def make_model_json():
-    m = KerasPerceptron(is_training=True)
-    model_architecture = m.model.to_json()
-    model_optimizer = get_optimizer(m.model)
-    model_json = {
-        "architecture": model_architecture,
-        "optimizer": model_optimizer
-    }
-    return model_json
-
-def make_initialize_job(model_json):
-    initialize_job = DMLJob(
-        "initialize",
-        model_json,
-        "keras",
-        hyperparams=make_hyperparams(),
-        label_column_name='label'
-    )
-    return initialize_job
-
-def make_hyperparams():
-    hyperparams = {
-        'averaging_type': 'data_size',
-        'batch_size': 4,
-        'epochs': 1,
-        'split': 0.004,
-    }
-    return hyperparams
+from tests.testing_utils        import make_initialize_job, make_model_json, make_serialized_job, serialize_job
+from core.utils.event_types     import RawEventTypes
 
 config_manager = ConfigurationManager()
 config_manager.bootstrap(
@@ -67,30 +36,23 @@ def test_communication_manager_can_initialize_and_train_model():
     """
     communication_manager = CommunicationManager(config_manager)
     scheduler = DMLScheduler(config_manager, communication_manager)
-    scheduler.reset()
     communication_manager.configure(scheduler)
     new_session_event = {
-            "key": None, 
-            "content": {
-                "optimizer_params": {}, 
-                "serialized_job": serialize_job(make_initialize_job(make_model_json()))}}
-    communication_manager.inform(RawEventTypes.NEW_SESSION.value, new_session_event)
+        "key": None,
+        "content": {
+            "optimizer_params": {},
+            "serialized_job": make_serialized_job()
+        }
+    }
+    communication_manager.inform(RawEventTypes.NEW_SESSION.name, new_session_event)
     scheduler.start_cron(period_in_mins = 0.05)
-    time.sleep(10)
+    time.sleep(7)
     scheduler.stop_cron()
     assert len(scheduler.processed) == 2
-    # TODO: I can't get the below AssertionError test to work since Georgy's code won't raise errors but it WORKS
-    # try:
-    #     scheduler.start_cron(period_in_mins = 0.05)
-    #     time.sleep(10)
-    #     scheduler.stop_cron()
-    #     assert len(scheduler.processed) == 2
-    #     assert False, "Runner should have been told to communicate"
-    # except AssertionError as e:
-    #     assert str(e) == "communication is not yet supported!"
+
 def test_communication_manager_can_be_initialized():
     communication_manager = CommunicationManager(config_manager)
-    assert communication_manager is not None
+    assert communication_manager
 
 def test_communication_manager_creates_new_sessions():
     """
@@ -101,27 +63,33 @@ def test_communication_manager_creates_new_sessions():
     scheduler = DMLScheduler(config_manager, communication_manager)
     scheduler.reset()
     communication_manager.configure(scheduler)
+    serialized_job = make_serialized_job()
     new_session_event = {
-            "key": None, 
-            "content": {
-                "optimizer_params": {}, 
-                "serialized_job": serialize_job(make_initialize_job(make_model_json()))}}
-    communication_manager.inform(RawEventTypes.NEW_SESSION.value, new_session_event)
-    assert communication_manager.optimizer is not None
+        "key": None,
+        "content": {
+            "optimizer_params": {},
+            "serialized_job": serialized_job
+        }
+    }
+    communication_manager.inform(RawEventTypes.NEW_SESSION.name, new_session_event)
+    assert communication_manager.optimizer
 
 def test_communication_manager_fails_if_not_configured():
     """
     Ensures that commmgr won't be able to function if it's not configured
     """
     communication_manager = CommunicationManager(config_manager)
+    serialized_job = make_serialized_job()
     new_session_event = {
-            "key": None, 
-            "content": {
-                "optimizer_params": {}, 
-                "serialized_job": serialize_job(make_initialize_job(make_model_json()))}}
+        "key": None,
+        "content": {
+            "optimizer_params": {},
+            "serialized_job": serialized_job
+        }
+    }
     try:
-        communication_manager.inform(RawEventTypes.NEW_SESSION.value, new_session_event)
-        assert False, "this should have raised an exception"
+        communication_manager.inform(RawEventTypes.NEW_SESSION.name, new_session_event)
+        assert False, "This should have raised an exception"
     except Exception as e:
         assert str(e) == "Communication Manager needs to be configured first!"
 
@@ -134,19 +102,22 @@ def test_communication_manager_can_inform_the_optimizer():
     scheduler.reset()
     communication_manager.configure(scheduler)
     true_job = make_initialize_job(make_model_json())
+    serialized_job = serialize_job(true_job)
     new_session_event = {
-            "key": None, 
-            "content": {
-                "optimizer_params": {}, 
-                "serialized_job": serialize_job(true_job)}}
-    communication_manager.inform(RawEventTypes.NEW_SESSION.value, new_session_event)
-    opt_job = communication_manager.optimizer.job
-    assert opt_job.weights == true_job.weights
-    assert opt_job.job_type == true_job.job_type
-    assert opt_job.serialized_model == true_job.serialized_model
-    assert opt_job.framework_type == true_job.framework_type
-    assert opt_job.hyperparams == true_job.hyperparams
-    assert opt_job.label_column_name == true_job.label_column_name
+        "key": None,
+        "content": {
+            "optimizer_params": {},
+            "serialized_job": serialized_job
+        }
+    }
+    communication_manager.inform(RawEventTypes.NEW_SESSION.name, new_session_event)
+    optimizer_job = communication_manager.optimizer.job
+    assert optimizer_job.weights == true_job.weights
+    assert optimizer_job.job_type == true_job.job_type
+    assert optimizer_job.serialized_model == true_job.serialized_model
+    assert optimizer_job.framework_type == true_job.framework_type
+    assert optimizer_job.hyperparams == true_job.hyperparams
+    assert optimizer_job.label_column_name == true_job.label_column_name
 
 
 
@@ -158,6 +129,27 @@ def test_communication_manager_can_inform_the_optimizer():
 
 
 
-# def test_communication_manager_terminates_sessions(communication_manager):
-#     """To be implemented."""
-#     assert False, "Implement me!"
+# def test_communication_manager_terminates_sessions():
+#     """
+#     Tests that the Communication Manager can terminate a session after setting it up.
+#     """
+#     communication_manager = CommunicationManager(config_manager)
+#     scheduler = DMLScheduler(config_manager, communication_manager)
+#     scheduler.reset()
+#     communication_manager.configure(scheduler)
+#     true_job = make_initialize_job(make_model_json())
+#     serialized_job = serialize_job(true_job)
+#     new_session_event = {
+#         "key": None,
+#         "content": {
+#             "optimizer_params": {},
+#             "serialized_job": serialized_job
+#         }
+#     }
+#     communication_manager.inform(RawEventTypes.NEW_SESSION.name, new_session_event)
+#     terminate_session_event = {
+#         "key": None,
+#         "content": {}
+#     }
+#     communication_manager.inform(RawEventTypes.NEW_INFO.name, terminate_session_event)
+#     assert not communication_manager.optimizer

@@ -12,6 +12,7 @@ from data.iterators import create_random_test_dataset_iterator
 from core.utils.keras import train_keras_model, validate_keras_model
 from core.utils.keras import serialize_weights
 from core.utils.dmlresult import DMLResult
+from core.utils.event_types import JobEventTypes, callback_handler
 # from core.utils.federated_learning_utils import federated_averaging
 #       NOTE: Commented until the next PR is done.
 
@@ -34,14 +35,6 @@ class DMLRunner(object):
 
     """
 
-    SUPPORTED_JOB_TYPES = [
-        'TRAIN',
-        'VALIDATE',
-        'INITIALIZE',
-        'AVERAGE',
-        'COMMUNICATE'
-    ]
-
     def __init__(self, config_manager):
         """
         Sets up the unique identifier of the DML Runner and the local dataset path.
@@ -53,6 +46,12 @@ class DMLRunner(object):
         self.test_dataset_path = os.path.join(self.dataset_path, 'test.csv')
         self.config = dict(config.items("RUNNER"))
         self.data_count = count_datapoints(self.dataset_path)
+        self.JOB_CALLBACKS = {
+            JobEventTypes.JOB_TRAIN.name: self._train,
+            JobEventTypes.JOB_INIT.name: self._initialize_model,
+            JobEventTypes.JOB_VAL.name: self._validate,
+            JobEventTypes.NOTHING.name: self._do_nothing,
+        }
 
     def run_job(self, job):
         """
@@ -60,80 +59,12 @@ class DMLRunner(object):
 
         If the runner is already executing a job, it silently does nothing.
         """
-        assert job.job_type.upper() in DMLRunner.SUPPORTED_JOB_TYPES, \
+        assert job.job_type.upper() in self.JOB_CALLBACKS, \
             'DMLJob type ({0}) is not valid'.format(job.job_type)
         logging.info("Running job (type: {0})...".format(job.job_type))
+        callback = callback_handler(job.job_type, self.JOB_CALLBACKS)
         try:
-            if job.job_type.upper() == 'TRAIN':
-                new_weights, omega, train_stats = self._train(
-                    job.serialized_model,
-                    job.framework_type,
-                    job.weights,
-                    job.hyperparams,
-                    job.label_column_name
-                )
-                results = DMLResult(
-                    status='successful',
-                    job=job,
-                    results={
-                        'weights': new_weights,
-                        'omega': omega,
-                        'train_stats': train_stats,
-                    },
-                    error_message="",
-                )
-            elif job.job_type.upper() == 'VALIDATE':
-                val_stats = self._validate(
-                     job.serialized_model,
-                     job.framework_type,
-                     job.weights,
-                     job.hyperparams,
-                     job.label_column_name
-                )
-                results = DMLResult(
-                    status='successful',
-                    job=job,
-                    results={
-                        'val_stats': val_stats,
-                    },
-                    error_message="",
-                )
-            elif job.job_type.upper() == 'INITIALIZE':
-                initial_weights = self._initialize_model(
-                    job.serialized_model,
-                    job.framework_type
-                )
-                results = DMLResult(
-                    status='successful',
-                    job=job,
-                    results={
-                        'weights': initial_weights,
-                    },
-                    error_message="",
-                )
-            elif job.job_type.upper() == 'AVERAGE':
-                raise Exception("averaging is not yet supported!")
-                # TODO: Implement Averaging!
-                # averaged_weights = federated_averaging(job.list_of_serialized_weights)
-                # results = DMLResult(
-                #     status='successful',
-                #     job=job,
-                #     results={
-                #         'weights': averaged_weights
-                #     },
-                #     error_message=""
-                # )
-            elif job.job_type.upper() == 'COMMUNICATE':
-                raise Exception("communication is not yet supported!")
-                # TODO: Implement Communicate!
-                # results = DMLResult(
-                #     status='successful',
-                #     job=job,
-                #     results={
-                #         'weights': job.weights
-                #     },
-                #     error_message=""
-                # )
+            results = callback(job)
         except Exception as e:
             logging.error("RunnerError: " + str(e))
             results = DMLResult(
@@ -146,8 +77,7 @@ class DMLRunner(object):
         logging.info("Finished running job!")
         return results
 
-    def _train(self, serialized_model, framework_type, initial_weights, hyperparams,
-        labeler):
+    def _train(self, job):
         """
         Trains the specified machine learning model on all the local data,
         starting from the initial model state specified, until a stopping
@@ -162,6 +92,7 @@ class DMLRunner(object):
         NOTE2: Assumes 'initial_weights' are the actual weights and not a path.
         """
         # Get the right dataset iterator based on the averaging type.
+        serialized_model, framework_type, initial_weights, hyperparams, labeler = job.serialized_model, job.framework_type, job.weights, job.hyperparams, job.label_column_name
         avg_type = hyperparams['averaging_type']
         batch_size = hyperparams['batch_size']
         assert avg_type in ['data_size', 'val_acc'], \
@@ -191,16 +122,25 @@ class DMLRunner(object):
         if avg_type == 'data_size':
             omega = self.data_count * hyperparams['split']
         elif avg_type == 'val_acc':
-            val_stats = self._validate(serialized_model, framework_type, new_weights,
-                hyperparams, labeler, custom_iterator=test_dataset_iterator)
+            val_stats = self._validate(job, custom_iterator=test_dataset_iterator).results['val_stats']
             omega = val_stats['val_metric']['acc']
             train_stats.update(val_stats)
 
         # Return the results.
-        return new_weights_path, omega, train_stats
+        # return new_weights_path, omega, train_stats
+        results = DMLResult(
+            status='successful',
+            job=job,
+            results={
+                'weights': new_weights_path,
+                'omega': omega,
+                'train_stats': train_stats,
+            },
+            error_message="",
+        )
+        return results
 
-    def _validate(self, serialized_model, framework_type, weights, hyperparams,
-        labeler, custom_iterator=None):
+    def _validate(self, job, custom_iterator=None):
         """
         Validates on all the local data the specified machine learning model at
         the state specified.
@@ -209,6 +149,7 @@ class DMLRunner(object):
 
         NOTE: Assumes 'weights' are the actual weights and not a path.
         """
+        serialized_model,framework_type,weights,hyperparams,labeler =job.serialized_model,job.framework_type,job.weights,job.hyperparams,job.label_column_name 
         logging.info("Validating model...")
         # Choose the dataset to validate on.
         batch_size = hyperparams['batch_size']
@@ -227,12 +168,22 @@ class DMLRunner(object):
                 dataset_iterator, self.data_count*(1-hyperparams['split']))
 
         # Return the validation stats.
-        return val_stats
+        results = DMLResult(
+            status='successful',
+            job=job,
+            results={
+                'val_stats': val_stats,
+            },
+            error_message="",
+        )
+        return results
 
-    def _initialize_model(self, serialized_model, framework_type):
+    def _initialize_model(self, job):
         """
         Initializes and returns the model weights as specified in the model.
         """
+        serialized_model = job.serialized_model
+        framework_type = job.framework_type
         assert framework_type in ['keras'], \
             "Model type '{0}' is not supported.".format(framework_type)
         logging.info("Initializing model...")
@@ -240,4 +191,19 @@ class DMLRunner(object):
             model = model_from_serialized(serialized_model)
             #model.summary()
             initial_weights = model.get_weights()
-        return initial_weights
+        results = DMLResult(
+                    status='successful',
+                    job=job,
+                    results={
+                        'weights': initial_weights,
+                    },
+                    error_message="",
+                )
+        return results
+
+    def _do_nothing(self, payload):
+        """
+        Do nothing.
+        """
+        logging.info("Doing nothing.")
+        pass
