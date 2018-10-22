@@ -84,3 +84,19 @@ def callback_handler(
     if callback_type in callback_dict:
         callback = callback_dict[callback_type]
     return callback
+
+
+def callback_handler_no_default(
+    callback_type,
+    callback_dict,
+    ):
+    """
+    Helper function which returns a callback from a callback
+    dict when given a callback type.
+    """
+    assert isinstance(callback_dict, dict), \
+        "callback_dict was not a dict, it was: {}".format(type(callback_dict))
+    if callback_type not in callback_dict:
+        raise Exception("Invalid callback passed!")
+    callback = callback_dict[callback_type]
+    return callback

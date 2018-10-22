@@ -12,7 +12,7 @@ from data.iterators import create_random_test_dataset_iterator
 from core.utils.keras import train_keras_model, validate_keras_model
 from core.utils.keras import serialize_weights
 from core.utils.dmlresult import DMLResult
-from core.utils.enums import JobTypes, callback_handler
+from core.utils.enums import JobTypes, callback_handler_no_default
 # from core.utils.federated_learning_utils import federated_averaging
 #       NOTE: Commented until the next PR is done.
 
@@ -50,7 +50,6 @@ class DMLRunner(object):
             JobTypes.JOB_TRAIN.name: self._train,
             JobTypes.JOB_INIT.name: self._initialize_model,
             JobTypes.JOB_VAL.name: self._validate,
-            JobTypes.NOTHING.name: self._do_nothing,
         }
 
     def run_job(self, job):
@@ -62,7 +61,7 @@ class DMLRunner(object):
         assert job.job_type.upper() in self.JOB_CALLBACKS, \
             'DMLJob type ({0}) is not valid'.format(job.job_type)
         logging.info("Running job (type: {0})...".format(job.job_type))
-        callback = callback_handler(job.job_type, self.JOB_CALLBACKS)
+        callback = callback_handler_no_default(job.job_type, self.JOB_CALLBACKS)
         try:
             results = callback(job)
         except Exception as e:
@@ -209,13 +208,3 @@ class DMLRunner(object):
                     error_message="",
                 )
         return results
-
-    def _do_nothing(self, payload):
-        """
-        Do nothing.
-        This function is necessary for the callback_handler debugging flow.
-        callback_handler needs a default function to run when it doesn't
-        find the callback the caller intends to see.
-        """
-        raise Exception("Runner should not be doing nothing!")
-        pass
