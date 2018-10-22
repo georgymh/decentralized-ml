@@ -16,7 +16,7 @@ config_manager = ConfigurationManager()
 config_manager.bootstrap(
     config_filepath='tests/artifacts/runner_scheduler/configuration.ini'
 )
-communication_manager = CommunicationManager(config_manager)
+communication_manager = CommunicationManager()
 scheduler = DMLScheduler(config_manager, communication_manager)
 
 def test_dmlscheduler_sanity():

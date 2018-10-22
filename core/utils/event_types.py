@@ -3,7 +3,7 @@ Communication Manager and the Optimizers."""
 
 from enum import Enum
 
-class JobEventTypes(Enum):
+class JobTypes(Enum):
     """
     Enum to implement callback pattern for DMLRunner
     """

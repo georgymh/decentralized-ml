@@ -6,7 +6,7 @@ import numpy as np
 from core.runner                import DMLRunner
 from core.configuration         import ConfigurationManager
 from core.utils.keras           import serialize_weights
-from core.utils.event_types     import JobEventTypes
+from core.utils.event_types     import JobTypes
 from tests.testing_utils        import make_initialize_job, make_model_json
 from tests.testing_utils        import make_train_job, make_validate_job, make_hyperparams
 
@@ -26,7 +26,7 @@ def test_dmlrunner_initialize_job_returns_list_of_nparray(config_manager):
     result = runner.run_job(initialize_job)
     results = result.results
     initial_weights = results['weights']
-    assert result.job.job_type is JobEventTypes.JOB_INIT.name
+    assert result.job.job_type is JobTypes.JOB_INIT.name
     assert type(initial_weights) == list
     assert type(initial_weights[0]) == np.ndarray
 
@@ -43,7 +43,7 @@ def test_dmlrunner_train_job_returns_weights_omega_and_stats(config_manager):
     new_weights = results['weights']
     omega = results['omega']
     train_stats = results['train_stats']
-    assert result.job.job_type is JobEventTypes.JOB_TRAIN.name
+    assert result.job.job_type is JobTypes.JOB_TRAIN.name
     assert type(new_weights) == list
     assert type(new_weights[0]) == np.ndarray
     assert type(omega) == int or type(omega) == float
@@ -67,5 +67,5 @@ def test_dmlrunner_validate_job_returns_stats(config_manager):
     result = runner.run_job(validate_job)
     results = result.results
     val_stats = results['val_stats']
-    assert result.job.job_type is JobEventTypes.JOB_VAL.name
+    assert result.job.job_type is JobTypes.JOB_VAL.name
     assert type(val_stats) == dict

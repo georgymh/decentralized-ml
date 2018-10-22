@@ -1,7 +1,7 @@
 import logging
 
 from core.utils.event_types import ActionableEventTypes, RawEventTypes
-from core.utils.event_types import JobEventTypes, callback_handler
+from core.utils.event_types import JobTypes, callback_handler
 from core.utils.dmljob import deserialize_job
 from core.utils.keras import serialize_weights
 from core.utils.dmlresult import DMLResult
@@ -22,7 +22,10 @@ class FederatedAveragingOptimizer(object):
 	a running average and increment listen_iterations until it exceeds
 	listen_bound, at which point it will start retraining
 
-	Breaks down info into Level_1 and Level_2 callbacks
+	Breaks down info into Level_1 and Level_2 callbacks. 
+	Level_1 Callbacks determine which Level_2 Callback to call,
+	and do some Level_2_ -specific action to make the payload
+	ready for the Level_2 Callback.
 
 	"""
 	def __init__(self, content):
@@ -42,10 +45,10 @@ class FederatedAveragingOptimizer(object):
 			RawEventTypes.NOTHING.name: self._do_nothing,
 		}
 		self.LEVEL_2_JOB_CALLBACKS = {
-			JobEventTypes.JOB_TRAIN.name: self._done_training,
-			JobEventTypes.JOB_INIT.name: self._done_initializing,
-			JobEventTypes.JOB_AVG.name: self._average_increment,
-			JobEventTypes.NOTHING.name: self._do_nothing,
+			JobTypes.JOB_TRAIN.name: self._done_training,
+			JobTypes.JOB_INIT.name: self._done_initializing,
+			JobTypes.JOB_AVG.name: self._average_increment,
+			JobTypes.NOTHING.name: self._do_nothing,
 		}
 		self.LEVEL_2_INFO_CALLBACKS = {
 			RawEventTypes.NEW_WEIGHTS.name: self._handle_new_weights,
@@ -59,7 +62,7 @@ class FederatedAveragingOptimizer(object):
 		Kickoff method for the FedAvgOptimizer.
 		Should split a dataset, and initialize the model.
 		"""
-		self.job.job_type = JobEventTypes.JOB_INIT.name
+		self.job.job_type = JobTypes.JOB_INIT.name
 		return ActionableEventTypes.SCHEDULE_JOB.name, self.job
 
 	def ask(self, event_type, payload):
@@ -110,7 +113,7 @@ class FederatedAveragingOptimizer(object):
 		Updates state and then returns appropriate DMLJob
 		# TODO: Will be updated with Averaging PR
 		"""
-		self.job.job_type = JobEventTypes.JOB_AVG.name
+		self.job.job_type = JobTypes.JOB_AVG.name
 		return ActionableEventTypes.SCHEDULE_JOB.name, self.job
 	
 	def _done_training(self, payload):
@@ -118,7 +121,7 @@ class FederatedAveragingOptimizer(object):
 		Level 2 Callback to handle a DMLResult of a training job
 		Should return a DMLJob of type Communication
 		"""
-		self.job.job_type = JobEventTypes.JOB_COMM.name
+		self.job.job_type = JobTypes.JOB_COMM.name
 		return ActionableEventTypes.SCHEDULE_JOB.name, self.job
 	
 	def _done_initializing(self, payload):
@@ -126,7 +129,7 @@ class FederatedAveragingOptimizer(object):
 		Level 2 Callback to handle a DMLResult of an initialization job
 		Should return a DMLJob of type Train
 		"""
-		self.job.job_type = JobEventTypes.JOB_TRAIN.name
+		self.job.job_type = JobTypes.JOB_TRAIN.name
 		return ActionableEventTypes.SCHEDULE_JOB.name, self.job
 	
 	def _terminate_session(self, payload):
@@ -145,7 +148,7 @@ class FederatedAveragingOptimizer(object):
 		self.listen_iterations += 1
 		if self.listen_iterations > self.listen_bound:
 			# self.listen_iterations = 0
-			self.job.job_type = JobEventTypes.JOB_TRAIN.name
+			self.job.job_type = JobTypes.JOB_TRAIN.name
 			return ActionableEventTypes.SCHEDULE_JOB.name, self.job
 		else:
 			return ActionableEventTypes.NOTHING.name, None

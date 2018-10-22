@@ -22,12 +22,11 @@ class CommunicationManager(object):
 
     """
 
-    def __init__(self, config_manager):
+    def __init__(self):
         """
         Initializes the class.
         """
         logging.info("Setting up Communication Manager...")
-        self.config_manager = config_manager
         self.optimizer = None # NOTE: Since right now we're only dealing with
                               # one session at a time, the class is only
                               # concerned with one optimizer.

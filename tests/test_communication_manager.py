@@ -35,7 +35,7 @@ def test_communication_manager_can_initialize_and_train_model():
     (15) Exception raised, since communication job is not implemented
     NOTE: No, I can't split this up. IDK why exactly but it hangs forever.
     """
-    communication_manager = CommunicationManager(config_manager)
+    communication_manager = CommunicationManager()
     scheduler = DMLScheduler(config_manager, communication_manager)
     communication_manager.configure(scheduler)
     new_session_event = {
@@ -52,7 +52,7 @@ def test_communication_manager_can_initialize_and_train_model():
     assert len(scheduler.processed) == 2
 
 def test_communication_manager_can_be_initialized():
-    communication_manager = CommunicationManager(config_manager)
+    communication_manager = CommunicationManager()
     assert communication_manager
 
 def test_communication_manager_creates_new_sessions():
@@ -60,7 +60,7 @@ def test_communication_manager_creates_new_sessions():
     Takes in initialized_communication_manager because the initialization is all that matters.
     Ensures that upon receiving an initialization job, the Communication Manager will make an optimizer.
     """
-    communication_manager = CommunicationManager(config_manager)
+    communication_manager = CommunicationManager()
     scheduler = DMLScheduler(config_manager, communication_manager)
     communication_manager.configure(scheduler)
     serialized_job = make_serialized_job()
@@ -78,7 +78,7 @@ def test_communication_manager_fails_if_not_configured():
     """
     Ensures that Communication Manager won't be able to function if it's not configured
     """
-    communication_manager = CommunicationManager(config_manager)
+    communication_manager = CommunicationManager()
     serialized_job = make_serialized_job()
     new_session_event = {
         "key": None,
@@ -97,7 +97,7 @@ def test_communication_manager_can_inform_the_optimizer():
     """
     Ensures that Communication Manager can tell the optimizer of something, and that the job will transfer
     """
-    communication_manager = CommunicationManager(config_manager)
+    communication_manager = CommunicationManager()
     scheduler = DMLScheduler(config_manager, communication_manager)
     communication_manager.configure(scheduler)
     true_job = make_initialize_job(make_model_json())
@@ -132,7 +132,7 @@ def test_communication_manager_can_inform_the_optimizer():
 #     """
 #     Tests that the Communication Manager can terminate a session after setting it up.
 #     """
-#     communication_manager = CommunicationManager(config_manager)
+#     communication_manager = CommunicationManager()
 #     scheduler = DMLScheduler(config_manager, communication_manager)
 #     communication_manager.configure(scheduler)
 #     true_job = make_initialize_job(make_model_json())

@@ -12,7 +12,7 @@ from data.iterators import create_random_test_dataset_iterator
 from core.utils.keras import train_keras_model, validate_keras_model
 from core.utils.keras import serialize_weights
 from core.utils.dmlresult import DMLResult
-from core.utils.event_types import JobEventTypes, callback_handler
+from core.utils.event_types import JobTypes, callback_handler
 # from core.utils.federated_learning_utils import federated_averaging
 #       NOTE: Commented until the next PR is done.
 
@@ -47,10 +47,10 @@ class DMLRunner(object):
         self.config = dict(config.items("RUNNER"))
         self.data_count = count_datapoints(self.dataset_path)
         self.JOB_CALLBACKS = {
-            JobEventTypes.JOB_TRAIN.name: self._train,
-            JobEventTypes.JOB_INIT.name: self._initialize_model,
-            JobEventTypes.JOB_VAL.name: self._validate,
-            JobEventTypes.NOTHING.name: self._do_nothing,
+            JobTypes.JOB_TRAIN.name: self._train,
+            JobTypes.JOB_INIT.name: self._initialize_model,
+            JobTypes.JOB_VAL.name: self._validate,
+            JobTypes.NOTHING.name: self._do_nothing,
         }
 
     def run_job(self, job):
@@ -213,6 +213,9 @@ class DMLRunner(object):
     def _do_nothing(self, payload):
         """
         Do nothing.
+        This function is necessary for the callback_handler debugging flow.
+        callback_handler needs a default function to run when it doesn't
+        find the callback the caller intends to see.
         """
         logging.info("Doing nothing.")
         pass

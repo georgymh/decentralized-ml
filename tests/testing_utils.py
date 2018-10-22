@@ -1,6 +1,6 @@
 from models.keras_perceptron    import KerasPerceptron
 from custom.keras               import get_optimizer
-from core.utils.event_types     import JobEventTypes, RawEventTypes
+from core.utils.event_types     import JobTypes, RawEventTypes
 from core.utils.dmljob          import DMLJob, serialize_job
 
 def make_dataset_path():
@@ -18,7 +18,7 @@ def make_model_json():
 
 def make_initialize_job(model_json):
     initialize_job = DMLJob(
-        JobEventTypes.JOB_INIT.name,
+        JobTypes.JOB_INIT.name,
         model_json,
         "keras",
         hyperparams=make_hyperparams(),
@@ -37,7 +37,7 @@ def make_hyperparams():
 
 def make_train_job(model_json, initial_weights, hyperparams):
     train_job = DMLJob(
-        JobEventTypes.JOB_TRAIN.name,
+        JobTypes.JOB_TRAIN.name,
         model_json,
         "keras",
         initial_weights,
@@ -52,7 +52,7 @@ def make_serialized_job():
 
 def make_validate_job(model_json, new_weights, hyperparams):
     validate_job = DMLJob(
-        JobEventTypes.JOB_VAL.name,
+        JobTypes.JOB_VAL.name,
         model_json,
         'keras',
         new_weights,
