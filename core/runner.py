@@ -217,5 +217,5 @@ class DMLRunner(object):
         callback_handler needs a default function to run when it doesn't
         find the callback the caller intends to see.
         """
-        logging.info("Doing nothing.")
+        raise Exception("Runner should not be doing nothing!")
         pass
