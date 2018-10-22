@@ -83,8 +83,8 @@ class DMLRunner(object):
         starting from the initial model state specified, until a stopping
         condition is met, and using the hyper-parameters specified.
 
-        Returns the updated model weights, the weighting factor omega, and stats
-        about the training job.
+        Returns a DMLResult with the updated model weights, the weighting factor 
+        omega, and stats about the training job.
 
         NOTE: Uses the same hyperparameters and labeler for training and
         validating during 'avg_type' of type 'val_acc'.
@@ -92,7 +92,11 @@ class DMLRunner(object):
         NOTE2: Assumes 'initial_weights' are the actual weights and not a path.
         """
         # Get the right dataset iterator based on the averaging type.
-        serialized_model, framework_type, initial_weights, hyperparams, labeler = job.serialized_model, job.framework_type, job.weights, job.hyperparams, job.label_column_name
+        serialized_model = job.serialized_model
+        framework_type = job.framework_type
+        initial_weights = job.weights
+        hyperparams = job.hyperparams
+        labeler = job.label_column_name        
         avg_type = hyperparams['averaging_type']
         batch_size = hyperparams['batch_size']
         assert avg_type in ['data_size', 'val_acc'], \
@@ -145,11 +149,15 @@ class DMLRunner(object):
         Validates on all the local data the specified machine learning model at
         the state specified.
 
-        Returns the metrics returned by the model.
+        Returns a DMLResult with the metrics returned by the model.
 
         NOTE: Assumes 'weights' are the actual weights and not a path.
         """
-        serialized_model,framework_type,weights,hyperparams,labeler =job.serialized_model,job.framework_type,job.weights,job.hyperparams,job.label_column_name 
+        serialized_model = job.serialized_model
+        framework_type = job.framework_type
+        weights = job.weights
+        hyperparams = job.hyperparams
+        labeler = job.label_column_name
         logging.info("Validating model...")
         # Choose the dataset to validate on.
         batch_size = hyperparams['batch_size']
@@ -180,7 +188,8 @@ class DMLRunner(object):
 
     def _initialize_model(self, job):
         """
-        Initializes and returns the model weights as specified in the model.
+        Initializes and returns a DMLResult with the model 
+        weights as specified in the model.
         """
         serialized_model = job.serialized_model
         framework_type = job.framework_type

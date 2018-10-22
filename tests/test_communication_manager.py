@@ -7,7 +7,8 @@ from core.communication_manager import CommunicationManager
 from core.runner                import DMLRunner
 from core.scheduler             import DMLScheduler
 from core.configuration         import ConfigurationManager
-from tests.testing_utils        import make_initialize_job, make_model_json, make_serialized_job, serialize_job
+from tests.testing_utils        import make_initialize_job, make_model_json
+from tests.testing_utils        import make_serialized_job, serialize_job
 from core.utils.event_types     import RawEventTypes
 
 config_manager = ConfigurationManager()

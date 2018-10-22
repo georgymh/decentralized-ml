@@ -75,7 +75,7 @@ class CommunicationManager(object):
         node is done training a particular model, to which the Optimizer could
         decide it's time to communicate the new weights to the network.
         """
-        logging.info("Information has been received: {})".format(payload))
+        logging.info("Information has been received: {})".format(event_type))
         if self.optimizer:
             # We have an active session.
             event_type, payload = self.optimizer.ask(event_type, payload)

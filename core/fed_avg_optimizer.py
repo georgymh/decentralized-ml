@@ -1,6 +1,7 @@
 import logging
 
-from core.utils.event_types import ActionableEventTypes, RawEventTypes, JobEventTypes, callback_handler
+from core.utils.event_types import ActionableEventTypes, RawEventTypes
+from core.utils.event_types import JobEventTypes, callback_handler
 from core.utils.dmljob import deserialize_job
 from core.utils.keras import serialize_weights
 from core.utils.dmlresult import DMLResult
@@ -16,6 +17,12 @@ class FederatedAveragingOptimizer(object):
 
 	Implements the Federated Averaging algorithm (with some tweaks)
 	and acts as a "brain" for the Unix Service
+
+	Specifically, upon hearing a new gradient, it will schedule
+	a running average and increment listen_iterations until it exceeds
+	listen_bound, at which point it will start retraining
+
+	Breaks down info into Level_1 and Level_2 callbacks
 
 	"""
 	def __init__(self, content):
@@ -37,7 +44,7 @@ class FederatedAveragingOptimizer(object):
 		self.LEVEL_2_JOB_CALLBACKS = {
 			JobEventTypes.JOB_TRAIN.name: self._done_training,
 			JobEventTypes.JOB_INIT.name: self._done_initializing,
-			JobEventTypes.JOB_AVG.name: self._average_iter,
+			JobEventTypes.JOB_AVG.name: self._average_increment,
 			JobEventTypes.NOTHING.name: self._do_nothing,
 		}
 		self.LEVEL_2_INFO_CALLBACKS = {
@@ -49,8 +56,10 @@ class FederatedAveragingOptimizer(object):
 	
 	def kickoff(self):
 		"""
-		Kickoff method for the FedAvgOptimizer. 
+		Kickoff method for the FedAvgOptimizer.
+		Should split a dataset, and initialize the model.
 		"""
+		self.job.job_type = JobEventTypes.JOB_INIT.name
 		return ActionableEventTypes.SCHEDULE_JOB.name, self.job
 
 	def ask(self, event_type, payload):
@@ -79,9 +88,6 @@ class FederatedAveragingOptimizer(object):
 	def _handle_new_info(self, payload):
 		"""
 		Level 1 Callback to handle the info from the network
-		Case 1: New weights
-		Case 2: Termination
-		Case 3: Init ???
 		"""
 		# event_type = payload['info_type']
 		# callback = callback_handler(event_type, self.LEVEL_2_INFO_CALLBACKS)
@@ -95,9 +101,6 @@ class FederatedAveragingOptimizer(object):
 		currently stored DMLJob with these weights, therefore 
 		ensuring that any future DMLJobs will operate with the 
 		correct weights. Mutates, does not return anything.
-		Case 1: Initialization
-		Case 2: Training update
-		Case 3: Averaging update
 		"""
 		self.job.weights = weights
 
@@ -105,33 +108,26 @@ class FederatedAveragingOptimizer(object):
 		"""
 		Level 2 Callback to handle new weights info
 		Updates state and then returns appropriate DMLJob
-		Will change in next PR
+		# TODO: Will be updated with Averaging PR
 		"""
-		job = self.job
-		job.job_type = JobEventTypes.JOB_AVG.name
-		# serialized_weights = payload["content"]
-		# job.add_weights(serialized_weights)
-		# newly_serialized_weights = serialize_weights(job.weights)
-		# job.add_weights(newly_serialized_weights)
-		return ActionableEventTypes.SCHEDULE_JOB.name, job
+		self.job.job_type = JobEventTypes.JOB_AVG.name
+		return ActionableEventTypes.SCHEDULE_JOB.name, self.job
 	
 	def _done_training(self, payload):
 		"""
 		Level 2 Callback to handle a DMLResult of a training job
 		Should return a DMLJob of type Communication
 		"""
-		job = self.job
-		job.job_type = JobEventTypes.JOB_COMM.name
-		return ActionableEventTypes.SCHEDULE_JOB.name, job
+		self.job.job_type = JobEventTypes.JOB_COMM.name
+		return ActionableEventTypes.SCHEDULE_JOB.name, self.job
 	
 	def _done_initializing(self, payload):
 		"""
 		Level 2 Callback to handle a DMLResult of an initialization job
 		Should return a DMLJob of type Train
 		"""
-		job = self.job
-		job.job_type = JobEventTypes.JOB_TRAIN.name
-		return ActionableEventTypes.SCHEDULE_JOB.name, job
+		self.job.job_type = JobEventTypes.JOB_TRAIN.name
+		return ActionableEventTypes.SCHEDULE_JOB.name, self.job
 	
 	def _terminate_session(self, payload):
 		"""
@@ -139,19 +135,18 @@ class FederatedAveragingOptimizer(object):
 		"""
 		return ActionableEventTypes.TERMINATE.name, None
 	
-	def _average_iter(self, payload):
+	def _average_increment(self, payload):
 		"""
 		Level 2 Callback to handle a DMLResult of an averaging job
 		Should only return a DMLJob of type Train if averaging is done
 		Currently, we'll only support one round of fed. learning
 		Will change in next PR
 		"""
-		job = self.job
 		self.listen_iterations += 1
 		if self.listen_iterations > self.listen_bound:
 			# self.listen_iterations = 0
-			job.job_type = JobEventTypes.JOB_TRAIN.name
-			return ActionableEventTypes.SCHEDULE_JOB.name, job
+			self.job.job_type = JobEventTypes.JOB_TRAIN.name
+			return ActionableEventTypes.SCHEDULE_JOB.name, self.job
 		else:
 			return ActionableEventTypes.NOTHING.name, None
 
