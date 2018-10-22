@@ -1,6 +1,6 @@
 import logging
 
-from core.utils.event_types import RawEventTypes, ActionableEventTypes, callback_handler
+from core.utils.enums import RawEventTypes, ActionableEventTypes, callback_handler
 from core.fed_avg_optimizer import FederatedAveragingOptimizer
 from core.utils.dmljob import DMLJob
 
@@ -39,6 +39,8 @@ class CommunicationManager(object):
 
         # These are unmapped and will only be received when an optimizer is not
         # active.
+        # NOTE: This should be updated when Gateway PR is merged to
+        # MessageEventTypes.<>.name
         self.RAW_EVENT_TYPE_2_CALLBACK = {
             RawEventTypes.NEW_SESSION.name: self._create_session,
             RawEventTypes.NEW_WEIGHTS.name: self._do_nothing,

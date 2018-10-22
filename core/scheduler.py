@@ -8,7 +8,7 @@ from multiprocessing import Pool
 from core.runner import DMLRunner
 from core.configuration import ConfigurationManager
 from core.utils.dmljob import DMLJob
-from core.utils.event_types import RawEventTypes
+from core.utils.enums import RawEventTypes
 
 
 logging.basicConfig(level=logging.DEBUG,

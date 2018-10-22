@@ -12,7 +12,7 @@ from data.iterators import create_random_test_dataset_iterator
 from core.utils.keras import train_keras_model, validate_keras_model
 from core.utils.keras import serialize_weights
 from core.utils.dmlresult import DMLResult
-from core.utils.event_types import JobTypes, callback_handler
+from core.utils.enums import JobTypes, callback_handler
 # from core.utils.federated_learning_utils import federated_averaging
 #       NOTE: Commented until the next PR is done.
 

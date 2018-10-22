@@ -1,7 +1,7 @@
 import logging
 
-from core.utils.event_types import ActionableEventTypes, RawEventTypes
-from core.utils.event_types import JobTypes, callback_handler
+from core.utils.enums import ActionableEventTypes, RawEventTypes
+from core.utils.enums import JobTypes, callback_handler
 from core.utils.dmljob import deserialize_job
 from core.utils.keras import serialize_weights
 from core.utils.dmlresult import DMLResult
