@@ -23,7 +23,6 @@ class JobTypes(Enum):
     JOB_INIT = "INITIALIZE"
     JOB_AVG = "AVERAGE"
     JOB_COMM = "COMMUNICATE"
-    NOTHING = "NOTHING"
 
 class RawEventTypes(Enum):
     """
@@ -72,7 +71,7 @@ class ActionableEventTypes(Enum):
 def callback_handler(
     callback_type,
     callback_dict,
-    default=RawEventTypes.NOTHING.value
+    default="NOTHING"
     ):
     """
     Helper function which returns a callback from a callback

@@ -40,17 +40,7 @@ class DMLJob(object):
         self.weights = weights
         self.hyperparams = hyperparams
         self.label_column_name = label_column_name
-        self.list_of_serialized_weights = []
 
-    def add_weights(self, serialized_weights):
-        """
-        DO NOT USE
-
-        TODO: Need to write a docstring for this (@panda), and we need to
-        change this function to a better design if it's going to be used for
-        the average routine (this will be done in the subsequent PRs).
-        """
-        self.serialized_weights = serialized_weights
 
 
 def serialize_job(dmljob_obj):

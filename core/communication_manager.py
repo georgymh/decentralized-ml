@@ -1,8 +1,9 @@
 import logging
 
-from core.utils.enums import RawEventTypes, ActionableEventTypes, callback_handler
+from core.utils.enums       import RawEventTypes, ActionableEventTypes
+from core.utils.enums       import callback_handler, callback_handler_no_default
 from core.fed_avg_optimizer import FederatedAveragingOptimizer
-from core.utils.dmljob import DMLJob
+from core.utils.dmljob      import DMLJob
 
 
 logging.basicConfig(level=logging.DEBUG,
@@ -45,7 +46,7 @@ class CommunicationManager(object):
             RawEventTypes.NEW_SESSION.name: self._create_session,
             RawEventTypes.NEW_WEIGHTS.name: self._do_nothing,
             RawEventTypes.TERMINATE.name: self._do_nothing,
-            RawEventTypes.NOTHING.name: self._do_nothing,
+            RawEventTypes.NOTHING.name: self._do_nothing
         }
         logging.info("Communication Manager is set up!")
 
@@ -80,17 +81,15 @@ class CommunicationManager(object):
         if self.optimizer:
             # We have an active session.
             event_type, payload = self.optimizer.ask(event_type, payload)
-            callback = callback_handler(
+            callback = callback_handler_no_default(
                 event_type,
                 self.ACTIONABLE_EVENT_TYPE_2_CALLBACK,
-                ActionableEventTypes.NOTHING.value
             )
         else:
             # We need to start a new session.
             callback = callback_handler(
                 event_type,
                 self.RAW_EVENT_TYPE_2_CALLBACK,
-                RawEventTypes.NOTHING.value
             )
         callback(payload)
 
@@ -110,22 +109,12 @@ class CommunicationManager(object):
         self.optimizer = FederatedAveragingOptimizer(content)
         logging.info("Optimizer session is set! Now doing kickoff...")
         event_type, payload = self.optimizer.kickoff()
-        callback = callback_handler(
+        callback = callback_handler_no_default(
             event_type,
             self.ACTIONABLE_EVENT_TYPE_2_CALLBACK,
-            ActionableEventTypes.NOTHING.value
         )
         callback(payload)
         logging.info("Kickoff complete.")
-
-    def _transform_and_split(self, payload):
-        """
-        Transforms and splits the local dataset.
-
-        TO BE IMPLEMENTED.
-        """
-        logging.info("Transforming and splitting... (NOT IMPLEMENTED YET)")
-        pass
 
     def _schedule_job(self, dmljob_obj):
         """

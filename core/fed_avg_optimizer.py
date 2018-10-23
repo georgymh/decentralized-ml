@@ -1,10 +1,10 @@
 import logging
 
-from core.utils.enums import ActionableEventTypes, RawEventTypes
-from core.utils.enums import JobTypes, callback_handler
-from core.utils.dmljob import deserialize_job
-from core.utils.keras import serialize_weights
-from core.utils.dmlresult import DMLResult
+from core.utils.enums 		import ActionableEventTypes, RawEventTypes
+from core.utils.enums 		import JobTypes, callback_handler_no_default
+from core.utils.dmljob 		import deserialize_job
+from core.utils.keras 		import serialize_weights
+from core.utils.dmlresult 	import DMLResult
 
 
 logging.basicConfig(level=logging.DEBUG,
@@ -42,18 +42,15 @@ class FederatedAveragingOptimizer(object):
 		self.LEVEL_1_CALLBACKS = {
 			RawEventTypes.JOB_DONE.name: self._handle_job_done,
 			RawEventTypes.NEW_INFO.name: self._handle_new_info,
-			RawEventTypes.NOTHING.name: self._do_nothing,
 		}
 		self.LEVEL_2_JOB_CALLBACKS = {
 			JobTypes.JOB_TRAIN.name: self._done_training,
 			JobTypes.JOB_INIT.name: self._done_initializing,
 			JobTypes.JOB_AVG.name: self._average_increment,
-			JobTypes.NOTHING.name: self._do_nothing,
 		}
 		self.LEVEL_2_INFO_CALLBACKS = {
 			RawEventTypes.NEW_WEIGHTS.name: self._handle_new_weights,
 			RawEventTypes.TERMINATE.name: self._terminate_session,
-			RawEventTypes.NOTHING.name: self._do_nothing,
 		}
 		logging.info("Optimizer has been set up!")
 	
@@ -71,7 +68,7 @@ class FederatedAveragingOptimizer(object):
 		If the callback is not defined, it does nothing.
 		Otherwise, calls the callback.
 		"""
-		callback = callback_handler(event_type, self.LEVEL_1_CALLBACKS)
+		callback = callback_handler_no_default(event_type, self.LEVEL_1_CALLBACKS)
 		return callback(payload)
 	
 	def _handle_job_done(self, result):
@@ -81,11 +78,12 @@ class FederatedAveragingOptimizer(object):
 		Also updates the weights
 		"""
 		assert isinstance(result, DMLResult)
-		# assume success for now
+		# assume success for now; in future, we may care that the
+		# job has achieved some degree of accuracy before updating weights
 		new_weights = result.results.get('weights')
 		self._update_weights(new_weights)
 		job_type = result.job.job_type
-		callback = callback_handler(job_type, self.LEVEL_2_JOB_CALLBACKS)
+		callback = callback_handler_no_default(job_type, self.LEVEL_2_JOB_CALLBACKS)
 		return callback(result)
 
 	def _handle_new_info(self, payload):
@@ -95,7 +93,7 @@ class FederatedAveragingOptimizer(object):
 		# event_type = payload['info_type']
 		# callback = callback_handler(event_type, self.LEVEL_2_INFO_CALLBACKS)
 		# NOTE: Hardcoded to handle new weights for now...
-		callback = callback_handler("new_weights", self.LEVEL_2_INFO_CALLBACKS)
+		callback = callback_handler_no_default("new_weights", self.LEVEL_2_INFO_CALLBACKS)
 		return callback(payload)
 
 	def _update_weights(self, weights):
@@ -152,6 +150,3 @@ class FederatedAveragingOptimizer(object):
 			return ActionableEventTypes.SCHEDULE_JOB.name, self.job
 		else:
 			return ActionableEventTypes.NOTHING.name, None
-
-	def _do_nothing(self, payload):
-		return None, None

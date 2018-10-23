@@ -93,7 +93,7 @@ def test_communication_manager_fails_if_not_configured():
     except Exception as e:
         assert str(e) == "Communication Manager needs to be configured first!"
 
-def test_communication_manager_can_inform_the_optimizer():
+def test_communication_manager_can_inform_new_job_to_the_optimizer():
     """
     Ensures that Communication Manager can tell the optimizer of something, and that the job will transfer
     """
