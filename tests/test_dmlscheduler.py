@@ -8,7 +8,6 @@ import numpy as np
 
 from core.scheduler             import DMLScheduler
 from core.configuration         import ConfigurationManager
-from core.communication_manager import CommunicationManager
 from tests.testing_utils        import make_initialize_job, make_model_json
 
 
@@ -16,7 +15,12 @@ config_manager = ConfigurationManager()
 config_manager.bootstrap(
     config_filepath='tests/artifacts/runner_scheduler/configuration.ini'
 )
-communication_manager = CommunicationManager()
+
+class MockCommunicationManager:
+    def inform(self, dummy1, dummy2):
+        pass
+
+communication_manager = MockCommunicationManager()
 scheduler = DMLScheduler(config_manager, communication_manager)
 
 def test_dmlscheduler_sanity():
