@@ -1,7 +1,7 @@
 import logging
 
 from core.utils.enums       import RawEventTypes, ActionableEventTypes
-from core.utils.enums       import callback_handler, callback_handler_no_default
+from core.utils.enums       import callback_handler_no_default
 from core.fed_avg_optimizer import FederatedAveragingOptimizer
 from core.utils.dmljob      import DMLJob
 
@@ -87,7 +87,7 @@ class CommunicationManager(object):
             )
         else:
             # We need to start a new session.
-            callback = callback_handler(
+            callback = callback_handler_no_default(
                 event_type,
                 self.RAW_EVENT_TYPE_2_CALLBACK,
             )

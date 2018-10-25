@@ -61,7 +61,10 @@ class DMLRunner(object):
         assert job.job_type.upper() in self.JOB_CALLBACKS, \
             'DMLJob type ({0}) is not valid'.format(job.job_type)
         logging.info("Running job (type: {0})...".format(job.job_type))
-        callback = callback_handler_no_default(job.job_type, self.JOB_CALLBACKS)
+        callback = callback_handler_no_default(
+            job.job_type,
+            self.JOB_CALLBACKS,
+        )
         try:
             results = callback(job)
         except Exception as e:
@@ -82,7 +85,7 @@ class DMLRunner(object):
         starting from the initial model state specified, until a stopping
         condition is met, and using the hyper-parameters specified.
 
-        Returns a DMLResult with the updated model weights, the weighting factor 
+        Returns a DMLResult with the updated model weights, the weighting factor
         omega, and stats about the training job.
 
         NOTE: Uses the same hyperparameters and labeler for training and
@@ -95,7 +98,7 @@ class DMLRunner(object):
         framework_type = job.framework_type
         initial_weights = job.weights
         hyperparams = job.hyperparams
-        labeler = job.label_column_name        
+        labeler = job.label_column_name
         avg_type = hyperparams['averaging_type']
         batch_size = hyperparams['batch_size']
         assert avg_type in ['data_size', 'val_acc'], \
@@ -187,7 +190,7 @@ class DMLRunner(object):
 
     def _initialize_model(self, job):
         """
-        Initializes and returns a DMLResult with the model 
+        Initializes and returns a DMLResult with the model
         weights as specified in the model.
         """
         serialized_model = job.serialized_model
