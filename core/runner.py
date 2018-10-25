@@ -91,44 +91,54 @@ class DMLRunner(object):
         NOTE: Uses the same hyperparameters and labeler for training and
         validating during 'avg_type' of type 'val_acc'.
 
-        NOTE2: Assumes 'initial_weights' are the actual weights and not a path.
+        NOTE2: Assumes 'job.weights' are the actual weights and not a path.
         """
         # Get the right dataset iterator based on the averaging type.
-        serialized_model = job.serialized_model
-        framework_type = job.framework_type
-        initial_weights = job.weights
-        hyperparams = job.hyperparams
-        labeler = job.label_column_name
-        avg_type = hyperparams['averaging_type']
-        batch_size = hyperparams['batch_size']
+        avg_type = job.hyperparams['averaging_type']
+        batch_size = job.hyperparams['batch_size']
+        split = job.hyperparams['split']
         assert avg_type in ['data_size', 'val_acc'], \
             "Averaging type '{0}' is not supported.".format(avg_type)
         logging.info("Training model...")
         if avg_type == 'data_size':
             dataset_iterator = create_random_train_dataset_iterator(
-                self.train_dataset_path, batch_size=batch_size, labeler=labeler
+                self.train_dataset_path,
+                batch_size=batch_size,
+                labeler=job.label_column_name,
             )
         elif avg_type == 'val_acc':
             dataset_iterator = create_random_train_dataset_iterator(
-                self.train_dataset_path, batch_size=batch_size, labeler=labeler
+                self.train_dataset_path,
+                batch_size=batch_size,
+                labeler=job.label_column_name,
             )
             test_dataset_iterator = create_random_test_dataset_iterator(
-                self.test_dataset_path, batch_size=batch_size, labeler=labeler
+                self.test_dataset_path,
+                batch_size=batch_size,
+                labeler=job.label_column_name,
             )
 
         # Train the model the right way based on the model type.
-        assert framework_type in ['keras'], \
+        assert job.framework_type in ['keras'], \
             "Model type '{0}' is not supported.".format(framework_type)
-        if framework_type == 'keras':
-            new_weights_path, train_stats = train_keras_model(serialized_model,
-                initial_weights, dataset_iterator, \
-                self.data_count*hyperparams['split'], hyperparams, self.config)
+        if job.framework_type == 'keras':
+            new_weights_path, train_stats = train_keras_model(
+                job.serialized_model,
+                job.weights,
+                dataset_iterator,
+                self.data_count*split,
+                job.hyperparams,
+                self.config
+            )
 
         # Get the right omega based on the averaging type.
         if avg_type == 'data_size':
-            omega = self.data_count * hyperparams['split']
+            omega = self.data_count * split
         elif avg_type == 'val_acc':
-            val_stats = self._validate(job, custom_iterator=test_dataset_iterator).results['val_stats']
+            val_stats = self._validate(
+                job,
+                custom_iterator=test_dataset_iterator
+            ).results['val_stats']
             omega = val_stats['val_metric']['acc']
             train_stats.update(val_stats)
 
@@ -155,27 +165,29 @@ class DMLRunner(object):
 
         NOTE: Assumes 'weights' are the actual weights and not a path.
         """
-        serialized_model = job.serialized_model
-        framework_type = job.framework_type
-        weights = job.weights
-        hyperparams = job.hyperparams
-        labeler = job.label_column_name
         logging.info("Validating model...")
         # Choose the dataset to validate on.
-        batch_size = hyperparams['batch_size']
+        batch_size = job.hyperparams['batch_size']
+        split = job.hyperparams['split']
         if custom_iterator is None:
             dataset_iterator = create_random_test_dataset_iterator(
-                self.test_dataset_path, batch_size=batch_size, labeler=labeler
+                self.test_dataset_path,
+                batch_size=batch_size,
+                labeler=job.label_column_name,
             )
         else:
             dataset_iterator = custom_iterator
 
         # Validate the model the right way based on the model type.
-        assert framework_type in ['keras'], \
-            "Model type '{0}' is not supported.".format(framework_type)
-        if framework_type == 'keras':
-            val_stats = validate_keras_model(serialized_model, weights,
-                dataset_iterator, self.data_count*(1-hyperparams['split']))
+        assert job.framework_type in ['keras'], \
+            "Model type '{0}' is not supported.".format(job.framework_type)
+        if job.framework_type == 'keras':
+            val_stats = validate_keras_model(
+                job.serialized_model,
+                job.weights,
+                dataset_iterator,
+                self.data_count*(1-split)
+            )
 
         # Return the validation stats.
         results = DMLResult(
@@ -193,13 +205,11 @@ class DMLRunner(object):
         Initializes and returns a DMLResult with the model
         weights as specified in the model.
         """
-        serialized_model = job.serialized_model
-        framework_type = job.framework_type
-        assert framework_type in ['keras'], \
-            "Model type '{0}' is not supported.".format(framework_type)
+        assert job.framework_type in ['keras'], \
+            "Model type '{0}' is not supported.".format(job.framework_type)
         logging.info("Initializing model...")
-        if framework_type == 'keras':
-            model = model_from_serialized(serialized_model)
+        if job.framework_type == 'keras':
+            model = model_from_serialized(job.serialized_model)
             #model.summary()
             initial_weights = model.get_weights()
         results = DMLResult(
