@@ -11,6 +11,7 @@ from tests.testing_utils        import make_initialize_job, make_model_json
 from tests.testing_utils        import make_serialized_job, serialize_job
 from core.utils.enums           import RawEventTypes
 
+
 config_manager = ConfigurationManager()
 config_manager.bootstrap(
     config_filepath='tests/artifacts/communication_manager/configuration.ini'
@@ -51,9 +52,31 @@ def test_communication_manager_can_initialize_and_train_model():
     scheduler.runners_run_next_jobs()
     assert len(scheduler.processed) == 2
 
+
 def test_communication_manager_can_be_initialized():
     communication_manager = CommunicationManager()
     assert communication_manager
+
+
+def test_communication_manager_fails_if_not_configured():
+    """
+    Ensures that Communication Manager won't be able to function if it's not configured
+    """
+    communication_manager = CommunicationManager()
+    serialized_job = make_serialized_job()
+    new_session_event = {
+        "key": None,
+        "content": {
+            "optimizer_params": {},
+            "serialized_job": serialized_job
+        }
+    }
+    try:
+        communication_manager.inform(RawEventTypes.NEW_SESSION.name, new_session_event)
+        raise Exception("This should have raised an exception")
+    except Exception as e:
+        assert str(e) == "Communication Manager needs to be configured first!"
+
 
 def test_communication_manager_creates_new_sessions():
     """
@@ -74,24 +97,6 @@ def test_communication_manager_creates_new_sessions():
     communication_manager.inform(RawEventTypes.NEW_SESSION.name, new_session_event)
     assert communication_manager.optimizer
 
-def test_communication_manager_fails_if_not_configured():
-    """
-    Ensures that Communication Manager won't be able to function if it's not configured
-    """
-    communication_manager = CommunicationManager()
-    serialized_job = make_serialized_job()
-    new_session_event = {
-        "key": None,
-        "content": {
-            "optimizer_params": {},
-            "serialized_job": serialized_job
-        }
-    }
-    try:
-        communication_manager.inform(RawEventTypes.NEW_SESSION.name, new_session_event)
-        raise Exception("This should have raised an exception")
-    except Exception as e:
-        assert str(e) == "Communication Manager needs to be configured first!"
 
 def test_communication_manager_can_inform_new_job_to_the_optimizer():
     """
@@ -119,13 +124,11 @@ def test_communication_manager_can_inform_new_job_to_the_optimizer():
     assert optimizer_job.label_column_name == true_job.label_column_name
 
 
-
-
+# NOTE: The following are tests that we will implement soon.
 
 # def test_communication_manager_can_parse_events_correctly(communication_manager):
 #     """To be implemented."""
 #     assert False, "Implement me!"
-
 
 
 # def test_communication_manager_terminates_sessions():
