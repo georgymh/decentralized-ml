@@ -26,9 +26,7 @@ def bootstrap():
     )
 
     # 3. Set up the Communication Manager.
-    communication_manager = CommunicationManager(
-        config_manager=config_manager
-    )
+    communication_manager = CommunicationManager()
 
     # 4. Set up the Execution Pipeline (Scheduler, Runners)
     # and run the Scheduler's cron on a new thread.
