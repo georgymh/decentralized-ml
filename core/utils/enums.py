@@ -5,18 +5,20 @@ from enum import Enum
 
 class JobTypes(Enum):
     """
-    Enum to implement callback pattern for DMLRunner
+    The different DML Job types used throughout the service.
 
-    JOB_TRAIN: Optimizer wants Runner to train the model
+    The types can be the following:
 
-    JOB_VAL: Optimizer wants Runner to validate the model
+        JOB_TRAIN: Train a model.
 
-    JOB_INIT: Optimizer wants Runner to initialize the model
+        JOB_VAL: Validate a model.
 
-    JOB_AVG: Optimizer wants Runner to average weights via weighted avg.
+        JOB_INIT: Initialize a model.
 
-    JOB_COMM: Optimizer wants Runner to push the weights onto
-    IPFS and then communicate this to rest of nodes via blockchain
+        JOB_AVG: Average weights via weighted average.
+
+        JOB_COMM: Push the weights onto IPFS and then communicate this update
+        to rest of the nodes via blockchain.
     """
     JOB_TRAIN = "TRAIN"
     JOB_VAL = "VALIDATE"
@@ -26,24 +28,34 @@ class JobTypes(Enum):
 
 class RawEventTypes(Enum):
     """
-    Enum to implement Communication Manager -> Optimizer callback pattern
+    Event types that are not "actionable" by the service in its current form (
+    and therefor are "raw"). These events are meant to be transformed by
+    something "actionable" by the Optimizer.
 
-    The event indicates what has occurred previously in the Unix Service.
+    The different Raw Event Types are the following:
 
-    # NOTE: Following 3 will be replaced by MessageTypes in Gateway PR
+        #+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#
+        #+ NOTE: Following 3 will be replaced by MessageTypes in Gateway PR. +#
+        #+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#
 
-    NEW_SESSION: Received info from the blockchain to create a new 
-    decentralized learning session
+        NEW_SESSION: Information received from the blockchain to create a new
+        DML Session.
 
-    NEW_WEIGHTS: Same as above, but for new weights
+        NEW_WEIGHTS: Information received from the blockchain saying there are
+        new weights available from the network.
 
-    TERMINATE: Same as above, but to terminate
+        TERMINATE: Information received from the blockchain instructing the
+        service to terminate a DML Session.
 
-    JOB_DONE: Sent to Communication Manager by Scheduler, means that
-    the payload will contain a DMLResult
+        #+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#
+        #+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#
+        #+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#
 
-    NEW_INFO: Sent to Communication Manager by Gateway, means that
-    the payload contains info from the blockchain
+        JOB_DONE: Information received from the Scheduler about a job that was
+        just completed (in the form of a DML Result).
+
+        NEW_INFO: Information received by the Gateway containing new information
+        from the blockchain.
     """
     NEW_SESSION = "NEW_SESSION"
     NEW_WEIGHTS = "NEW_WEIGHTS"
@@ -54,48 +66,61 @@ class RawEventTypes(Enum):
 
 class ActionableEventTypes(Enum):
     """
-    Enum to implement Optimizer -> Communication Manager callback pattern
+    Actionable event types that the service can take action on.
 
-    This is essentially a 'command' for the Comm. Mgr. so these are all imperatives.
+    The different event types are the following:
 
-    SCHEUDLE_JOB: Optimizer wants Communication Manager to tell its
-    Scheduler to schedule a job
+        SCHEUDLE_JOB: Instruction to the Execution Pipeline to schedule a job
+        to run.
 
-    TERMINATE: Optimizer wants to terminate itself
+        TERMINATE: Instruction to the Communication Manager to terminate a
+        DML Session.
 
     """
     SCHEDULE_JOB = "SCHEDULE_JOB"
     TERMINATE = "TERMINATE"
     NOTHING = "NOTHING"
 
-def callback_handler(
+def callback_handler_with_default(callback_type, callback_dict, default="NOTHING"):
+    """
+    Util function to return a callback from a dictionary that falls back to a
+    default callback specified by `default`. The fallback is
+    `callback_dict[default]`.
+    """
+    return _callback_handler(callback_type, callback_dict, True, "NOTHING")
+
+def callback_handler_no_default(callback_type, callback_dict):
+    """
+    Util function to return a callback from a dictionary without a fallback
+    mechanism. If `callback_type` is not found in `callback_dict` then an
+    exception is raised.
+    """
+    return _callback_handler(callback_type, callback_dict, False)
+
+def _callback_handler(
     callback_type,
     callback_dict,
-    default="NOTHING"
+    with_default=True,
+    default="NOTHING",
     ):
     """
-    Helper function which returns a callback from a callback
-    dict when given a callback type.
+    Helper function which returns a callback function from the `callback_dict`
+    dictionary.
+
+    The callback_dict dictionary should be a dictionary of strings to functions.
+
+    When `with_default` is True (default), the `callback_dict` should contain
+    a key `default` which is the fallback callback returned when `callback_type`
+    is not found in `callback_dict`. If False, then the function will raise an
+    exception instead of falling back to a default entry.
     """
     assert isinstance(callback_dict, dict), \
         "callback_dict was not a dict, it was: {}".format(type(callback_dict))
-    callback = callback_dict[default]
-    if callback_type in callback_dict:
-        callback = callback_dict[callback_type]
-    return callback
-
-
-def callback_handler_no_default(
-    callback_type,
-    callback_dict,
-    ):
-    """
-    Helper function which returns a callback from a callback
-    dict when given a callback type.
-    """
-    assert isinstance(callback_dict, dict), \
-        "callback_dict was not a dict, it was: {}".format(type(callback_dict))
-    if callback_type not in callback_dict:
-        raise Exception("Invalid callback passed!")
-    callback = callback_dict[callback_type]
-    return callback
+    if with_default:
+        assert default in callback_dict, \
+            "The default callback provided was not found in callback_dict"
+        return callback_dict.get(callback_type, callback_dict[default])
+    else:
+        if callback_type not in callback_dict:
+            raise Exception("Invalid callback passed!")
+        return callback_dict[callback_type]
