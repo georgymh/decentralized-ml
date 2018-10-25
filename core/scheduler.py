@@ -3,6 +3,7 @@ import time
 import json
 from collections import deque
 from threading import Event, Timer
+import multiprocessing
 from multiprocessing import Pool
 
 from core.runner import DMLRunner
@@ -43,6 +44,7 @@ class DMLScheduler(object):
 		self.num_runners = config.getint("SCHEDULER", "num_runners")
 		self.max_tries = config.getint("SCHEDULER", "max_tries")
 
+		multiprocessing.set_start_method('spawn', force=True)
 		self.pool = Pool(processes=self.num_runners)
 		self.runners = [DMLRunner(config_manager) for _ in range(self.num_runners)]
 		self.current_jobs = [None for _ in range(self.num_runners)]

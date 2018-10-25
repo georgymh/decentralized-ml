@@ -47,9 +47,12 @@ def test_communication_manager_can_initialize_and_train_model():
         }
     }
     communication_manager.inform(RawEventTypes.NEW_SESSION.name, new_session_event)
-    scheduler.runners_run_next_jobs()
-    scheduler.runners_run_next_jobs()
-    scheduler.runners_run_next_jobs()
+    while len(scheduler.processed) == 0:
+        scheduler.runners_run_next_jobs()
+        time.sleep(0.1)
+    while len(scheduler.processed) == 1:
+        scheduler.runners_run_next_jobs()
+        time.sleep(0.1)
     assert len(scheduler.processed) == 2
 
 
