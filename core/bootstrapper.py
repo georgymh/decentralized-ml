@@ -37,7 +37,7 @@ def bootstrap():
     t1 = threading.Thread(
         target=scheduler.start_cron,
         args=(0.05,),
-        daemon=True,
+        daemon=False,
     )
     t1.start()
 
