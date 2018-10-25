@@ -62,7 +62,6 @@ class RawEventTypes(Enum):
     TERMINATE = "TERMINATE"
     JOB_DONE = "JOB_DONE"
     NEW_INFO = "NEW_INFO"
-    NOTHING = "NOTHING"
 
 class ActionableEventTypes(Enum):
     """
@@ -79,7 +78,6 @@ class ActionableEventTypes(Enum):
     """
     SCHEDULE_JOB = "SCHEDULE_JOB"
     TERMINATE = "TERMINATE"
-    NOTHING = "NOTHING"
 
 def callback_handler_with_default(callback_type, callback_dict, default="NOTHING"):
     """

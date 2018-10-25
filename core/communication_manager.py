@@ -35,7 +35,6 @@ class CommunicationManager(object):
         self.ACTIONABLE_EVENT_TYPE_2_CALLBACK = {
             ActionableEventTypes.SCHEDULE_JOB.name: self._schedule_job,
             ActionableEventTypes.TERMINATE.name: self._terminate_session,
-            ActionableEventTypes.NOTHING.name: self._do_nothing,
         }
 
         # These are unmapped and will only be received when an optimizer is not
@@ -44,9 +43,8 @@ class CommunicationManager(object):
         # MessageEventTypes.<>.name
         self.RAW_EVENT_TYPE_2_CALLBACK = {
             RawEventTypes.NEW_SESSION.name: self._create_session,
-            RawEventTypes.NEW_WEIGHTS.name: self._do_nothing,
-            RawEventTypes.TERMINATE.name: self._do_nothing,
-            RawEventTypes.NOTHING.name: self._do_nothing
+            # RawEventTypes.NEW_WEIGHTS.name: self._do_nothing,
+            # RawEventTypes.TERMINATE.name: self._do_nothing,
         }
         logging.info("Communication Manager is set up!")
 
@@ -136,10 +134,3 @@ class CommunicationManager(object):
         """
         logging.info("Session terminated.")
         self.optimizer = None
-
-    def _do_nothing(self, payload):
-        """
-        Do nothing.
-        """
-        logging.info("Doing nothing.")
-        pass

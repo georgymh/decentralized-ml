@@ -51,7 +51,9 @@ class FederatedAveragingOptimizer(object):
 		self.LEVEL_2_JOB_CALLBACKS = {
 			JobTypes.JOB_TRAIN.name: self._done_training,
 			JobTypes.JOB_INIT.name: self._done_initializing,
-			JobTypes.JOB_AVG.name: self._average_increment,
+			# NOTE: This will be implemented in a next PR. Here so @panda
+			# doesn't lose his code.
+			# JobTypes.JOB_AVG.name: self._average_increment,
 		}
 		self.LEVEL_2_INFO_CALLBACKS = {
 			RawEventTypes.NEW_WEIGHTS.name: self._handle_new_weights,
@@ -148,17 +150,22 @@ class FederatedAveragingOptimizer(object):
 		"""
 		return ActionableEventTypes.TERMINATE.name, None
 
-	def _average_increment(self, payload):
-		"""
-		Level 2 Callback to handle a DMLResult of an averaging job
-		Should only return a DMLJob of type Train if averaging is done
-		Currently, we'll only support one round of fed. learning
-		Will change in next PR
-		"""
-		self.listen_iterations += 1
-		if self.listen_iterations > self.listen_bound:
-			# self.listen_iterations = 0
-			self.job.job_type = JobTypes.JOB_TRAIN.name
-			return ActionableEventTypes.SCHEDULE_JOB.name, self.job
-		else:
-			return ActionableEventTypes.NOTHING.name, None
+	# NOTE: Will be implemented in the next PR. Here so that @panda doesn't
+	# lose his code.
+	# def _average_increment(self, payload):
+	# 	"""
+	# 	Level 2 Callback to handle a DMLResult of an averaging job.
+	# 	Should only return a DMLJob of type Train if averaging is done.
+	#
+	# 	NOTE: Currently, we'll only support one round of fed. learning, but this
+	# 	will change in next PR.
+	# 	"""
+	# 	self.listen_iterations += 1
+	# 	if self.listen_iterations > self.listen_bound:
+	# 		# TODO: Need to figure out how to support more rounds.
+	# 		# self.listen_iterations = 0
+	# 		self.job.job_type = JobTypes.JOB_TRAIN.name
+	# 		return ActionableEventTypes.SCHEDULE_JOB.name, self.job
+	# 	else:
+	# 		# NOTE: There is no nothing anymore.
+	# 		return ActionableEventTypes.NOTHING.name, None
