@@ -37,8 +37,9 @@ def test_communication_manager_can_initialize_and_train_model():
     NOTE: No, I can't split this up. IDK why exactly but it hangs forever.
     """
     communication_manager = CommunicationManager()
-    scheduler = DMLScheduler(config_manager, communication_manager)
+    scheduler = DMLScheduler(config_manager)
     communication_manager.configure(scheduler)
+    scheduler.configure(communication_manager)
     new_session_event = {
         "key": None,
         "content": {
@@ -87,8 +88,9 @@ def test_communication_manager_creates_new_sessions():
     Ensures that upon receiving an initialization job, the Communication Manager will make an optimizer.
     """
     communication_manager = CommunicationManager()
-    scheduler = DMLScheduler(config_manager, communication_manager)
+    scheduler = DMLScheduler(config_manager)
     communication_manager.configure(scheduler)
+    scheduler.configure(communication_manager)
     serialized_job = make_serialized_job()
     new_session_event = {
         "key": None,
@@ -106,8 +108,9 @@ def test_communication_manager_can_inform_new_job_to_the_optimizer():
     Ensures that Communication Manager can tell the optimizer of something, and that the job will transfer
     """
     communication_manager = CommunicationManager()
-    scheduler = DMLScheduler(config_manager, communication_manager)
+    scheduler = DMLScheduler(config_manager)
     communication_manager.configure(scheduler)
+    scheduler.configure(communication_manager)
     true_job = make_initialize_job(make_model_json())
     serialized_job = serialize_job(true_job)
     new_session_event = {

@@ -27,12 +27,11 @@ class DMLScheduler(object):
 
 	"""
 
-	def __init__(self, config_manager, communication_manager):
+	def __init__(self, config_manager):
 		"""
 		Initializes the instance.
 		"""
 		logging.info("Setting up scheduler...")
-		self.communication_manager = communication_manager
 		self.queue = deque()
 		self.event = Event()
 		self.processed = []
@@ -50,6 +49,13 @@ class DMLScheduler(object):
 		self.current_jobs = [None for _ in range(self.num_runners)]
 		self.current_results = [None for _ in range(self.num_runners)]
 		logging.info("Scheduler is set up!")
+
+	def configure(self, communication_manager):
+		"""
+		Configures the scheduler with the Communication Manager so that it can
+		inform it of the jobs it schedules after they run successfully.
+		"""
+		self.communication_manager = communication_manager
 
 	def add_job(self, dml_job):
 		"""
@@ -95,10 +101,15 @@ class DMLScheduler(object):
 		run the next job on the queue asynchronously of the others and collect
 		the result of the job that was running before (if applicable).
 
+		If job succeeds, inform the Communication Manager about the results.
+
 		If job that runner is running fails, then put the job back in queue.
 		If job failed more than num_tries times, don't put the job back in
-		thw queue.
+		the queue.
 		"""
+		if not self.communication_manager:
+			raise Exception("Scheduler needs to be configured first!")
+
 		for i, runner in enumerate(self.runners):
 			# Check if there's any finished jobs and process them.
 			if self.current_results[i]:

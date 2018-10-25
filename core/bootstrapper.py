@@ -32,7 +32,9 @@ def bootstrap():
     # and run the Scheduler's cron on a new thread.
     scheduler = DMLScheduler(
         config_manager=config_manager,
-        communication_manager=communication_manager,
+    )
+    scheduler.configure(
+        communication_manager=communication_manager
     )
     t1 = threading.Thread(
         target=scheduler.start_cron,

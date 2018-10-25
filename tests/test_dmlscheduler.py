@@ -21,7 +21,8 @@ class MockCommunicationManager:
         pass
 
 communication_manager = MockCommunicationManager()
-scheduler = DMLScheduler(config_manager, communication_manager)
+scheduler = DMLScheduler(config_manager)
+scheduler.configure(communication_manager)
 
 def test_dmlscheduler_sanity():
     """
