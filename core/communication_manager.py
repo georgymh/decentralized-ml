@@ -79,7 +79,7 @@ class CommunicationManager(object):
         if self.optimizer:
             # We have an active session.
             event_type, payload = self.optimizer.ask(event_type, payload)
-            callback = callback_handler(
+            callback = callback_handler_no_default(
                 event_type,
                 self.ACTIONABLE_EVENT_TYPE_2_CALLBACK,
             )
