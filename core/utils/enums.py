@@ -28,8 +28,8 @@ class JobTypes(Enum):
 
 class RawEventTypes(Enum):
     """
-    Event types that are not "actionable" by the service in its current form (
-    and therefore are "raw"). These events are meant to be transformed by
+    Event types that are not "actionable" by the service in its current form
+    (and therefore are "raw"). These events are meant to be transformed by
     something "actionable" by the Optimizer.
 
     The different Raw Event Types are the following:

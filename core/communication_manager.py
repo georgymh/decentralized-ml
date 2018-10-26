@@ -32,19 +32,12 @@ class CommunicationManager(object):
                               # one session at a time, the class is only
                               # concerned with one optimizer.
         self.scheduler = None
-        self.ACTIONABLE_EVENT_TYPE_2_CALLBACK = {
+        # NOTE: This should be updated when Gateway PR is merged and we make
+        # the Communication Manager error-handle out of order/missed messages.
+        self.EVENT_TYPE_2_CALLBACK = {
+            RawEventTypes.NEW_SESSION.name: self._create_session,
             ActionableEventTypes.SCHEDULE_JOB.name: self._schedule_job,
             ActionableEventTypes.TERMINATE.name: self._terminate_session,
-        }
-
-        # These are unmapped and will only be received when an optimizer is not
-        # active.
-        # NOTE: This should be updated when Gateway PR is merged to
-        # MessageEventTypes.<>.name
-        self.RAW_EVENT_TYPE_2_CALLBACK = {
-            RawEventTypes.NEW_SESSION.name: self._create_session,
-            # RawEventTypes.NEW_WEIGHTS.name: self._do_nothing,
-            # RawEventTypes.TERMINATE.name: self._do_nothing,
         }
         logging.info("Communication Manager is set up!")
 
@@ -77,18 +70,12 @@ class CommunicationManager(object):
         """
         logging.info("Information has been received: {})".format(event_type))
         if self.optimizer:
-            # We have an active session.
+            # We have an active session so we ask the optimizer what to do.
             event_type, payload = self.optimizer.ask(event_type, payload)
-            callback = callback_handler_no_default(
-                event_type,
-                self.ACTIONABLE_EVENT_TYPE_2_CALLBACK,
-            )
-        else:
-            # We need to start a new session.
-            callback = callback_handler_no_default(
-                event_type,
-                self.RAW_EVENT_TYPE_2_CALLBACK,
-            )
+        callback = callback_handler_no_default(
+            event_type,
+            self.EVENT_TYPE_2_CALLBACK
+        )
         callback(payload)
 
     # Callbacks
@@ -103,13 +90,13 @@ class CommunicationManager(object):
         # only considering the 'FederatedAveragingOptimizer' for now.
         # TODO: We need to incorporate session id's when we're ready.
         logging.info("New optimizer session is being set up...")
-        content = payload.get('content')
-        self.optimizer = FederatedAveragingOptimizer(content)
+        initialization_payload = payload.get('content')
+        self.optimizer = FederatedAveragingOptimizer(initialization_payload)
         logging.info("Optimizer session is set! Now doing kickoff...")
         event_type, payload = self.optimizer.kickoff()
         callback = callback_handler_no_default(
             event_type,
-            self.ACTIONABLE_EVENT_TYPE_2_CALLBACK,
+            self.EVENT_TYPE_2_CALLBACK,
         )
         callback(payload)
         logging.info("Kickoff complete.")
@@ -132,5 +119,5 @@ class CommunicationManager(object):
         Note that it ignores the payload for now (since we're only dealing with
         one session).
         """
-        logging.info("Session terminated.")
         self.optimizer = None
+        logging.info("Session terminated.")

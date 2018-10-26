@@ -15,157 +15,149 @@ class FederatedAveragingOptimizer(object):
 	"""
 	Federated Averaging Optimizer
 
-	Implements the Federated Averaging algorithm (with some tweaks)
-	and acts as a "brain" for the Unix Service.
+	Implements the Federated Averaging algorithm (with some tweaks) and acts as
+	a "brain" or decision making component for the service. This class is
+	tightly integrated with the Communication Manager, and serves as an
+	abstraction between routing messages internally and making decisions on
+	what messages to route and to where.
 
-	This is where the DML Job is stored and modified throghout the lifecycle
-	of a DML Session. It's passed to the Communication Manager so it can be
-	routed.
+	The Optimizer stores the DML Job throghout the lifecycle of a DML Session,
+	and passes it to the Communication Manager so it can be routed wherever
+	needed.
 
-	Specifically, upon hearing a new gradient, it will schedule
-	a running average and increment listen_iterations until it exceeds
-	listen_bound, at which point it will start retraining
+	This particular optimizer works with callbacks:
 
-	Breaks down info into Level_1 and Level_2 callbacks.
-	Level_1 Callbacks determine which Level_2 Callback to call,
-	and do some Level_2_ -specific action to make the payload
-	ready for the Level_2 Callback.
+		- There are "LEVEL 1" callbacks, which represent the types of Raw Events
+	  	that the Optimizer needs to process.
+
+		- There also are "LEVEL 2" callbacks, which represent a further breakdown
+	  	of the "LEVEL 1" callbacks so that the Optimizer transform the event into
+	  	a meaningful DML Job that can be executed by the Execution Pipeline.
 
 	"""
-	def __init__(self, content):
+
+	def __init__(self, initialization_payload):
 		"""
-		Kwargs is a dictionary containing all the info needed to initialize
-		the Optimizer. This includes any number of properties such as
-		thresholds, etc.
+		Initializes the optimizer.
+
+		Expects the `initialization_payload` dict to contain two entries:
+
+			- `serialized_job`: the serialized DML Job
+
+			- `optimizer_params`: the optimizer parameters (dict) needed to
+			initialize this optimizer (should contain the listen_iterations and
+			listen_bound)
 		"""
 		logging.info("Setting up Optimizer")
-		kwargs = content.get('optimizer_params')
-		serialized_job = content.get('serialized_job')
+		serialized_job = initialization_payload.get('serialized_job')
 		self.job = deserialize_job(serialized_job)
-		self.listen_iterations = kwargs.get('listen_iterations', 0)
-		self.listen_bound = kwargs.get('listen_bound', 1)
-		self.LEVEL_1_CALLBACKS = {
+		optimizer_params = initialization_payload.get('optimizer_params')
+		self.listen_iterations = optimizer_params.get('listen_iterations')
+		self.listen_bound = optimizer_params.get('listen_bound')
+		self.LEVEL1_CALLBACKS = {
 			RawEventTypes.JOB_DONE.name: self._handle_job_done,
-			RawEventTypes.NEW_INFO.name: self._handle_new_info,
 		}
-		self.LEVEL_2_JOB_CALLBACKS = {
+		self.LEVEL2_JOB_DONE_CALLBACKS = {
 			JobTypes.JOB_TRAIN.name: self._done_training,
 			JobTypes.JOB_INIT.name: self._done_initializing,
-			# NOTE: This will be implemented in a next PR. Here so @panda
-			# doesn't lose his code.
-			# JobTypes.JOB_AVG.name: self._average_increment,
-		}
-		self.LEVEL_2_INFO_CALLBACKS = {
-			RawEventTypes.NEW_WEIGHTS.name: self._handle_new_weights,
-			RawEventTypes.TERMINATE.name: self._terminate_session,
+			# TODO: Support COMM and AVG soon.
 		}
 		logging.info("Optimizer has been set up!")
 
 	def kickoff(self):
 		"""
-		Kickoff method for the FedAvgOptimizer.
-		Should split a dataset, and initialize the model.
+		Kickoff method used at the beginning of a DML Session.
+
+		Creates a job that transforms and splits the dataset, and also
+		randomly initializes the model.
 		"""
 		self.job.job_type = JobTypes.JOB_INIT.name
 		return ActionableEventTypes.SCHEDULE_JOB.name, self.job
 
 	def ask(self, event_type, payload):
 		"""
-		Parses an event dictionary into a level 1 callback.
-		If the callback is not defined, it does nothing.
-		Otherwise, calls the callback.
+		Processes an event_type by calling the corresponding "LEVEL 1" Callback.
 		"""
-		callback = callback_handler_no_default(
-			event_type,
-			self.LEVEL_1_CALLBACKS
-		)
+		callback = callback_handler_no_default(event_type, self.LEVEL1_CALLBACKS)
 		return callback(payload)
 
-	def _handle_job_done(self, result):
+	# Handlers for job completed in the execution pipeline
+
+	def _handle_job_done(self, dmlresult_obj):
 		"""
-		Level 1 Callback to handle the payload of a DMLResult
-		Parses job.job_type into Level 2 Callback
-		Also updates the weights
+		"LEVEL 1" Callback that handles the conversion of a DML Result into a
+		new DML Job by calling the appropriate "LEVEL 2" Callback.
 		"""
-		assert isinstance(result, DMLResult)
-		# assume success for now; in future, we may care that the
-		# job has achieved some degree of accuracy before updating weights
-		new_weights = result.results.get('weights')
+		assert isinstance(dmlresult_obj, DMLResult)
+		callback = callback_handler_no_default(
+			dmlresult_obj.job.job_type,
+			self.LEVEL2_JOB_DONE_CALLBACKS
+		)
+		return callback(dmlresult_obj)
+
+	def _done_initializing(self, dmlresult_obj):
+		"""
+		"LEVEL 2" Callback for a initialization job that just completed. Returns
+		a DML Job of type train and modifies the current state of the job.
+		"""
+		new_weights = dmlresult_obj.results.get('weights')
 		self._update_weights(new_weights)
-		job_type = result.job.job_type
-		callback = callback_handler_no_default(
-			job_type,
-			self.LEVEL_2_JOB_CALLBACKS
-		)
-		return callback(result)
-
-	def _handle_new_info(self, payload):
-		"""
-		Level 1 Callback to handle the info from the network
-		"""
-		# NOTE: Hardcoded to handle new weights for now...
-		callback = callback_handler_no_default(
-			RawEventTypes.NEW_INFO.name,
-			self.LEVEL_2_INFO_CALLBACKS
-		)
-		return callback(payload)
-
-	def _update_weights(self, weights):
-		"""
-		Helper function to replace the weights in the optimizer's
-		currently stored DMLJob with these weights, therefore
-		ensuring that any future DMLJobs will operate with the
-		correct weights. Mutates, does not return anything.
-		"""
-		self.job.weights = weights
-
-	def _handle_new_weights(self, payload):
-		"""
-		Level 2 Callback to handle new weights info
-		Updates state and then returns appropriate DMLJob
-		# TODO: Will be updated with Averaging PR
-		"""
-		self.job.job_type = JobTypes.JOB_AVG.name
-		return ActionableEventTypes.SCHEDULE_JOB.name, self.job
-
-	def _done_training(self, payload):
-		"""
-		Level 2 Callback to handle a DMLResult of a training job
-		Should return a DMLJob of type Communication
-		"""
-		self.job.job_type = JobTypes.JOB_COMM.name
-		return ActionableEventTypes.SCHEDULE_JOB.name, self.job
-
-	def _done_initializing(self, payload):
-		"""
-		Level 2 Callback to handle a DMLResult of an initialization job
-		Should return a DMLJob of type Train
-		"""
 		self.job.job_type = JobTypes.JOB_TRAIN.name
 		return ActionableEventTypes.SCHEDULE_JOB.name, self.job
 
-	def _terminate_session(self, payload):
+	def _done_training(self, dmlresult_obj):
 		"""
-		Level 2 Callback to terminate session
-		"""
-		return ActionableEventTypes.TERMINATE.name, None
+		"LEVEL 2" Callback for a training job that just completed. Returns a
+		DML Job of type communication and modifies the current state of the job.
 
-	# NOTE: Will be implemented in the next PR. Here so that @panda doesn't
-	# lose his code.
-	# def _average_increment(self, payload):
+		NOTE: Assumes that the training succeeded. In the future, we may care
+		about a degree of accuracy needed to be reached before updating the
+		weights.
+		"""
+		new_weights = dmlresult_obj.results.get('weights')
+		self._update_weights(new_weights)
+		self.job.job_type = JobTypes.JOB_COMM.name
+		return ActionableEventTypes.SCHEDULE_JOB.name, self.job
+
+	# Handlers for new information from the gateway
+	# TODO: This will come with the Gateway PR.
+
+	# def _handle_new_info(self, payload):
 	# 	"""
-	# 	Level 2 Callback to handle a DMLResult of an averaging job.
-	# 	Should only return a DMLJob of type Train if averaging is done.
+	# 	"LEVEL 1" Callback to handle new information from the blockchain.
 	#
-	# 	NOTE: Currently, we'll only support one round of fed. learning, but this
-	# 	will change in next PR.
+	# 	NOTE: The payload structure is to be defined.
 	# 	"""
-	# 	self.listen_iterations += 1
-	# 	if self.listen_iterations > self.listen_bound:
-	# 		# TODO: Need to figure out how to support more rounds.
-	# 		# self.listen_iterations = 0
-	# 		self.job.job_type = JobTypes.JOB_TRAIN.name
-	# 		return ActionableEventTypes.SCHEDULE_JOB.name, self.job
-	# 	else:
-	# 		# NOTE: There is no nothing anymore.
-	# 		return ActionableEventTypes.NOTHING.name, None
+	# 	# TODO: Some assert on the payload, like in `_handle_job_done()`.
+	# 	callback = callback_handler_no_default(
+	# 		RawEventTypes.NEW_INFO.name,
+	# 		self.LEVEL_2_INFO_CALLBACKS
+	# 	)
+	# 	return callback(payload)
+
+	# def _received_new_weights(self, payload):
+	# 	"""
+	# 	"LEVEL 2" Callback for new weights received by the service from the
+	# 	blockchain.
+	#
+	# 	TODO: Will be updated with Averaging PR
+	# 	"""
+	# 	self.job.job_type = JobTypes.JOB_AVG.name
+	# 	return ActionableEventTypes.SCHEDULE_JOB.name, self.job
+
+	# def _received_termination(self, payload):
+	# 	"""
+	# 	"LEVEL 2" Callback for a termination message received by the service
+	# 	from the blockchain.
+	# 	"""
+	# 	return ActionableEventTypes.TERMINATE.name, None
+
+	# Helper functions
+
+	def _update_weights(self, weights):
+		"""
+		Helper function to update the weights in the optimizer's currently
+		stored DML Job, therefore ensuring that any future DML Jobs will operate
+		with the correct weights. Mutates, does not return anything.
+		"""
+		self.job.weights = weights
