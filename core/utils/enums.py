@@ -69,7 +69,7 @@ class ActionableEventTypes(Enum):
 
     The different event types are the following:
 
-        SCHEUDLE_JOB: Instruction to the Execution Pipeline to schedule a job
+        SCHEDULE_JOB: Instruction to the Execution Pipeline to schedule a job
         to run.
 
         TERMINATE: Instruction to the Communication Manager to terminate a
