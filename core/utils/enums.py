@@ -25,6 +25,7 @@ class JobTypes(Enum):
     JOB_INIT = "INITIALIZE"
     JOB_AVG = "AVERAGE"
     JOB_COMM = "COMMUNICATE"
+    JOB_TRANSFORM_SPLIT = "TRANSFORM_SPLIT"
 
 class RawEventTypes(Enum):
     """

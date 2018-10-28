@@ -42,14 +42,14 @@ class DMLRunner(object):
         config = config_manager.get_config()
         self.iden = str(uuid.uuid4())[:8]
         self.dataset_path = config.get("GENERAL", "dataset_path")
-        self.train_dataset_path = os.path.join(self.dataset_path, 'train.csv')
-        self.test_dataset_path = os.path.join(self.dataset_path, 'test.csv')
+        
         self.config = dict(config.items("RUNNER"))
         self.data_count = count_datapoints(self.dataset_path)
         self.JOB_CALLBACKS = {
             JobTypes.JOB_TRAIN.name: self._train,
             JobTypes.JOB_INIT.name: self._initialize_model,
             JobTypes.JOB_VAL.name: self._validate,
+            JobTypes.JOB_TRANSFORM_SPLIT.name: self.split_and_transform_data
         }
 
     def run_job(self, job):
@@ -93,6 +93,16 @@ class DMLRunner(object):
 
         NOTE2: Assumes 'job.weights' are the actual weights and not a path.
         """
+        assert job.session_filepath, \
+            "Transformed training and test sets not created yet!"
+        train_dataset_path = os.path.join(
+                                job.session_filepath, 
+                                'train.csv'
+                            )
+        test_dataset_path = os.path.join(
+                                job.session_filepath, 
+                                'test.csv'
+                            )
         # Get the right dataset iterator based on the averaging type.
         avg_type = job.hyperparams['averaging_type']
         batch_size = job.hyperparams['batch_size']
@@ -102,18 +112,18 @@ class DMLRunner(object):
         logging.info("Training model...")
         if avg_type == 'data_size':
             dataset_iterator = create_random_train_dataset_iterator(
-                self.train_dataset_path,
+                train_dataset_path,
                 batch_size=batch_size,
                 labeler=job.label_column_name,
             )
         elif avg_type == 'val_acc':
             dataset_iterator = create_random_train_dataset_iterator(
-                self.train_dataset_path,
+                train_dataset_path,
                 batch_size=batch_size,
                 labeler=job.label_column_name,
             )
             test_dataset_iterator = create_random_test_dataset_iterator(
-                self.test_dataset_path,
+                test_dataset_path,
                 batch_size=batch_size,
                 labeler=job.label_column_name,
             )
@@ -166,12 +176,22 @@ class DMLRunner(object):
         NOTE: Assumes 'weights' are the actual weights and not a path.
         """
         logging.info("Validating model...")
+        assert job.session_filepath, \
+            "Transformed training and test sets not created yet!"
+        train_dataset_path = os.path.join(
+                                job.session_filepath, 
+                                'train.csv'
+                            )
+        test_dataset_path = os.path.join(
+                                job.session_filepath, 
+                                'test.csv'
+                            )
         # Choose the dataset to validate on.
         batch_size = job.hyperparams['batch_size']
         split = job.hyperparams['split']
         if custom_iterator is None:
             dataset_iterator = create_random_test_dataset_iterator(
-                self.test_dataset_path,
+                test_dataset_path,
                 batch_size=batch_size,
                 labeler=job.label_column_name,
             )
@@ -221,3 +241,105 @@ class DMLRunner(object):
                     error_message="",
                 )
         return results
+
+    def split_and_transform_data(self, job):
+        """
+        Takes in a job, which should have the raw filepath assigned.
+
+        1. In each folder, aggregate all data.
+        2. Create session folder in transformed folder, along with data folders
+           in session folder.
+        3. Transform data in each raw data folder.
+        4. Shuffle each transformed data and perform train-test split on each. 
+        5. Put each training and test set in corresponding data folders in 
+           session folder.
+        6. Update session filepath in job.
+        """
+
+        # 1. Extracts all of the raw data from raw data filepath
+        files = os.listdir(job.raw_filepath)
+        assert len(files) == 1, \
+            "Only supporting one file per dataset folder!"
+        filepath = os.path.join(
+                    job.raw_filepath,
+                    files[0]
+                )
+        raw_data = pd.read_csv(job.raw_filepath)
+
+        # 2. Create transformed folder, if it doesn't exist.
+        transformed_filepath = os.path.join(job.raw_filepath, "transformed")
+        if not os.path.isdir(transformed_filepath):
+            os.makedirs(transformed_filepath)
+
+        # 3. Create session folder using timestamp and random characters.
+        new_name = str(uuid.uuid4())
+        job.session_filepath = os.path.join(transformed_filepath, new_name)
+        os.makedirs(job.session_filepath)
+
+        # 4. Retrieve transform function and train-test split from job.
+        transform_function = job.transform_function
+        split = job.hyperparams['split']
+
+        # 5. Shuffle raw data, then split into train and test set.
+        transformed_data = transform_function(raw_data)
+        transformed_data = transformed_data.sample(frac=1)
+        split_index = int(len(transformed_data)*split)
+        train = transformed_data.iloc[:split_index] 
+        test = transformed_data.iloc[split_index:]
+
+        # 6. Create train.csv and test.csv in data folder.
+        train.to_csv(
+            os.path.join(job.session_filepath, 'train.csv'),
+            index=False
+        )
+
+        test.to_csv(
+            os.path.join(job.session_filepath, 'test.csv'),
+            index=False
+        )
+
+        # 7. Return job with assigned session folder filepath
+        results = DMLResult(
+                    status='successful',
+                    job=job,
+                    error_message="",
+                )
+        return results 
+
+    def _get_raw_data(self, job):
+        """
+        Extracts all raw data from raw data filepath. Assumes filepath contains
+        folders, which in turn contain csv files. 
+        
+        Returns dictionary of (key, value) pairs where key is a folder in the 
+        directory and value is an aggregated DataFrame of the csv files in
+        that folder. 
+        """
+        raw_dict = {}
+        for folder in os.listdir(job.raw_filepath):
+            folder_path = os.path.join(
+                            os.path.abspath(job.raw_filepath), 
+                            folder
+                        )
+            if not os.path.isdir(folder_path): continue
+            files = os.listdir(folder_path)
+            assert len(files) == 1, \
+                "Only assuming one dataset per data folder!"
+            filepath = os.path.join(folder_path, files[0])
+            raw_dict[folder] = pd.read_csv(filepath)
+        return raw_dict
+
+    # def get_transformed_data(self, job):
+    #     """
+    #     Extracts all transformed data from transform data filepath.
+
+    #     Assumes filepath contains csvfiles. Returns where
+    #     each (key, value) represents a csv file. Each key is the filename of the
+    #     csv (i.e. key.csv) and each value is a DataFrame of the actual data.
+    #     """
+    #     train_filepath = os.path.join(job.session_filepath, 'train')
+    #     test_filepath = os.path.join(job.session_filepath, 'test')
+
+    #     train = pd.read_csv(train_filepath)
+    #     test = pd.read_csv(test_filepath)
+    #     return transform_dict

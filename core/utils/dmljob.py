@@ -40,6 +40,9 @@ class DMLJob(object):
         self.weights = weights
         self.hyperparams = hyperparams
         self.label_column_name = label_column_name
+        self.raw_filepath = None
+        self.session_filepath = None
+        self.transform_function = None
 
 
 
@@ -59,6 +62,9 @@ def serialize_job(dmljob_obj):
         'framework_type': dmljob_obj.framework_type,
         'hyperparams': dmljob_obj.hyperparams,
         'label_column_name': dmljob_obj.label_column_name,
+        'raw_filepath': dmljob_obj.raw_filepath,
+        'session_filepath': dmljob_obj.session_filepath,
+        'transform_function': transform_function
     }
     weights = None
     if dmljob_obj.weights:
@@ -89,4 +95,7 @@ def deserialize_job(serialized_job):
         weights,
         rest['hyperparams'],
         rest['label_column_name'],
+        rest['raw_filepath'],
+        rest['session_filepath'],
+        rest['transform_function']
     )
