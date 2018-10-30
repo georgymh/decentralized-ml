@@ -84,7 +84,10 @@ class BlockchainGateway(object):
         try:
             filtered_diffs = loop.run_until_complete(
                 self.start_listening(event_filter))
-            check = list(map(handler, filtered_diffs))
+            if filtered_diffs:
+                check = list(map(handler, filtered_diffs))
+            else:
+                check = None
         finally:
             loop.close()
         return check
