@@ -9,7 +9,6 @@ before_install:
   - eval $(ssh-agent -s)
   - ssh-add pk
   - git clone git@github.com:nzoghb/dagora-chain.git
-  - cd dagora-chain/
   # use node
   - nvm install 0.10
   - nvm use 0.10
@@ -22,7 +21,7 @@ install:
   # install lotion
   - npm i lotion@0.1.18
 before_script:
-  - node ./app_trivial.js &
+  - node ./dagora-chain/app_trivial.js &
   - ipfs init
   - ipfs daemon &
   - sleep 5
