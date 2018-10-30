@@ -126,7 +126,7 @@ class BlockchainGateway(object):
         # TODO: Uncomment below line as soon as we can get Travis to work with these tests
         # self.listen_new_weights()
 
-    def handle_terminate(self) -> None:
+    def handle_terminate(self) -> list:
         self.communication_manager.inform("TERMINATE", None)
 
     def listen_decentralized_learning(self) -> list:
