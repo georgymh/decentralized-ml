@@ -105,7 +105,7 @@ class BlockchainGateway(object):
         value = tx.get(TxEnum.CONTENT.name)
         # args = {TxEnum.KEY.name: key, TxEnum.CONTENT.name: ipfs_to_content(self.client, value)}
         self.communication_manager.inform(RawEventTypes.NEW_SESSION.name, value)
-        self.listen_new_weights()
+        # self.listen_new_weights()
 
     def handle_new_weights(self, tx: dict):
         """
