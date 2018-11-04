@@ -27,6 +27,10 @@ def initialization_payload():
     }
 
 @pytest.fixture
+def mnist_filepath():
+    return 'tests/artifacts/datasets/mnist'
+
+@pytest.fixture
 def init_dmlresult_obj(config_manager):
     runner = DMLRunner(config_manager)
     initialize_job = make_initialize_job(make_model_json())
@@ -34,11 +38,16 @@ def init_dmlresult_obj(config_manager):
     return result
 
 @pytest.fixture
-def train_dmlresult_obj(config_manager, init_dmlresult_obj):
+def train_dmlresult_obj(config_manager, mnist_filepath, init_dmlresult_obj):
     runner = DMLRunner(config_manager)
     initialize_job = make_initialize_job(make_model_json())
     initial_weights = init_dmlresult_obj.results['weights']
-    train_job = make_train_job(make_model_json(), initial_weights, make_hyperparams())
+    train_job = make_train_job(
+                    make_model_json(), 
+                    initial_weights, 
+                    make_hyperparams(),
+                    mnist_filepath,
+                )
     result = runner.run_job(train_job)
     return result
 

@@ -3,6 +3,7 @@ import random
 import uuid
 import time
 import os
+import pandas as pd
 
 from core.configuration import ConfigurationManager
 from custom.keras import model_from_serialized, get_optimizer
@@ -41,15 +42,13 @@ class DMLRunner(object):
         """
         config = config_manager.get_config()
         self.iden = str(uuid.uuid4())[:8]
-        self.dataset_path = config.get("GENERAL", "dataset_path")
         
         self.config = dict(config.items("RUNNER"))
-        self.data_count = count_datapoints(self.dataset_path)
         self.JOB_CALLBACKS = {
             JobTypes.JOB_TRAIN.name: self._train,
             JobTypes.JOB_INIT.name: self._initialize_model,
             JobTypes.JOB_VAL.name: self._validate,
-            JobTypes.JOB_TRANSFORM_SPLIT.name: self.split_and_transform_data
+            JobTypes.JOB_TRANSFORM_SPLIT.name: self._transform_and_split_data
         }
 
     def run_job(self, job):
@@ -65,16 +64,17 @@ class DMLRunner(object):
             job.job_type,
             self.JOB_CALLBACKS,
         )
-        try:
-            results = callback(job)
-        except Exception as e:
-            logging.error("RunnerError: " + str(e))
-            results = DMLResult(
-                status='failed',
-                job=job,
-                error_message=str(e),
-                results={},
-            )
+        results = callback(job)
+        # try:
+        #     results = callback(job)
+        # except Exception as e:
+        #     logging.error("RunnerError: " + str(e))
+        #     results = DMLResult(
+        #         status='failed',
+        #         job=job,
+        #         error_message=str(e),
+        #         results={},
+        #     )
         self.current_job = None
         logging.info("Finished running job! (type: {0})".format(job.job_type))
         return results
@@ -103,6 +103,7 @@ class DMLRunner(object):
                                 job.session_filepath, 
                                 'test.csv'
                             )
+        data_count = count_datapoints(job.session_filepath)
         # Get the right dataset iterator based on the averaging type.
         avg_type = job.hyperparams['averaging_type']
         batch_size = job.hyperparams['batch_size']
@@ -136,14 +137,14 @@ class DMLRunner(object):
                 job.serialized_model,
                 job.weights,
                 dataset_iterator,
-                self.data_count*split,
+                data_count*split,
                 job.hyperparams,
                 self.config
             )
 
         # Get the right omega based on the averaging type.
         if avg_type == 'data_size':
-            omega = self.data_count * split
+            omega = data_count * split
         elif avg_type == 'val_acc':
             val_stats = self._validate(
                 job,
@@ -186,6 +187,7 @@ class DMLRunner(object):
                                 job.session_filepath, 
                                 'test.csv'
                             )
+        data_count = count_datapoints(job.session_filepath)
         # Choose the dataset to validate on.
         batch_size = job.hyperparams['batch_size']
         split = job.hyperparams['split']
@@ -206,7 +208,7 @@ class DMLRunner(object):
                 job.serialized_model,
                 job.weights,
                 dataset_iterator,
-                self.data_count*(1-split)
+                data_count*(1-split)
             )
 
         # Return the validation stats.
@@ -242,7 +244,7 @@ class DMLRunner(object):
                 )
         return results
 
-    def split_and_transform_data(self, job):
+    def _transform_and_split_data(self, job):
         """
         Takes in a job, which should have the raw filepath assigned.
 
@@ -257,14 +259,19 @@ class DMLRunner(object):
         """
 
         # 1. Extracts all of the raw data from raw data filepath
+        assert job.raw_filepath, \
+            "Raw data filepath has not been set!"
+        assert job.transform_function, \
+            "Transform function has not been set!"
         files = os.listdir(job.raw_filepath)
+        files = list(filter(lambda x: x.endswith('.csv'), files))
         assert len(files) == 1, \
             "Only supporting one file per dataset folder!"
-        filepath = os.path.join(
+        data_filepath = os.path.join(
                     job.raw_filepath,
                     files[0]
                 )
-        raw_data = pd.read_csv(job.raw_filepath)
+        raw_data = pd.read_csv(data_filepath)
 
         # 2. Create transformed folder, if it doesn't exist.
         transformed_filepath = os.path.join(job.raw_filepath, "transformed")
@@ -273,8 +280,8 @@ class DMLRunner(object):
 
         # 3. Create session folder using timestamp and random characters.
         new_name = str(uuid.uuid4())
-        job.session_filepath = os.path.join(transformed_filepath, new_name)
-        os.makedirs(job.session_filepath)
+        session_filepath = os.path.join(transformed_filepath, new_name)
+        os.makedirs(session_filepath)
 
         # 4. Retrieve transform function and train-test split from job.
         transform_function = job.transform_function
@@ -286,15 +293,15 @@ class DMLRunner(object):
         split_index = int(len(transformed_data)*split)
         train = transformed_data.iloc[:split_index] 
         test = transformed_data.iloc[split_index:]
-
+        
         # 6. Create train.csv and test.csv in data folder.
         train.to_csv(
-            os.path.join(job.session_filepath, 'train.csv'),
+            os.path.join(session_filepath, 'train.csv'),
             index=False
         )
 
         test.to_csv(
-            os.path.join(job.session_filepath, 'test.csv'),
+            os.path.join(session_filepath, 'test.csv'),
             index=False
         )
 
@@ -302,7 +309,10 @@ class DMLRunner(object):
         results = DMLResult(
                     status='successful',
                     job=job,
-                    error_message="",
+                    results = {
+                        'session_filepath': session_filepath
+                    },
+                    error_message=""
                 )
         return results 
 

@@ -17,7 +17,11 @@ config_manager.bootstrap(
     config_filepath='tests/artifacts/communication_manager/configuration.ini'
 )
 
-def test_communication_manager_can_initialize_and_train_model():
+@pytest.fixture
+def mnist_filepath():
+    return 'tests/artifacts/datasets/mnist'
+
+def test_communication_manager_can_initialize_and_train_model(mnist_filepath):
     """
     Integration test that checks that the Communication Manager can initialize,
     train, (and soon communicate) a model.
@@ -58,7 +62,7 @@ def test_communication_manager_can_initialize_and_train_model():
         "key": None,
         "content": {
             "optimizer_params": {},
-            "serialized_job": make_serialized_job()
+            "serialized_job": make_serialized_job(mnist_filepath)
         }
     }
     communication_manager.inform(
@@ -88,7 +92,7 @@ def test_communication_manager_fails_if_not_configured():
     configured.
     """
     communication_manager = CommunicationManager()
-    serialized_job = make_serialized_job()
+    serialized_job = make_serialized_job(mnist_filepath)
     new_session_event = {
         "key": None,
         "content": {
@@ -115,7 +119,7 @@ def test_communication_manager_creates_new_sessions():
     scheduler = DMLScheduler(config_manager)
     communication_manager.configure(scheduler)
     scheduler.configure(communication_manager)
-    serialized_job = make_serialized_job()
+    serialized_job = make_serialized_job(mnist_filepath)
     new_session_event = {
         "key": None,
         "content": {

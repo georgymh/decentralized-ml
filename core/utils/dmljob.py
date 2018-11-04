@@ -1,6 +1,7 @@
 import numpy as np
 
 from core.utils.keras import serialize_weights, deserialize_weights
+from core.utils.enums import JobTypes
 
 class DMLJob(object):
     """
@@ -18,7 +19,10 @@ class DMLJob(object):
         framework_type,
         weights=None,
         hyperparams=None,
-        label_column_name=None
+        label_column_name=None,
+        raw_filepath=None,
+        session_filepath=None,
+        transform_function=None
         ):
         """
         Initializes a DML Job object.
@@ -40,9 +44,9 @@ class DMLJob(object):
         self.weights = weights
         self.hyperparams = hyperparams
         self.label_column_name = label_column_name
-        self.raw_filepath = None
-        self.session_filepath = None
-        self.transform_function = None
+        self.raw_filepath = raw_filepath
+        self.session_filepath = session_filepath
+        self.transform_function = transform_function
 
 
 
@@ -64,7 +68,7 @@ def serialize_job(dmljob_obj):
         'label_column_name': dmljob_obj.label_column_name,
         'raw_filepath': dmljob_obj.raw_filepath,
         'session_filepath': dmljob_obj.session_filepath,
-        'transform_function': transform_function
+        'transform_function': dmljob_obj.transform_function
     }
     weights = None
     if dmljob_obj.weights:
