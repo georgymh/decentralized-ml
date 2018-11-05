@@ -44,7 +44,6 @@ class DMLRunner(object):
         self.iden = str(uuid.uuid4())[:8]
         
         self.config = dict(config.items("RUNNER"))
-        self.data_count = count_datapoints(self.dataset_path)
         self.JOB_CALLBACKS = {
             JobTypes.JOB_TRAIN.name: self._train,
             JobTypes.JOB_INIT.name: self._initialize_model,
