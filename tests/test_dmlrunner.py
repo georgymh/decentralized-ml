@@ -24,10 +24,6 @@ def config_manager():
     return config_manager
 
 @pytest.fixture
-def do_nothing():
-    return lambda x: x
-
-@pytest.fixture
 def sample_transform_function():
     return lambda x: x.drop_duplicates()
 
@@ -103,7 +99,7 @@ def test_dmlrunner_train_test_split( \
         shutil.rmtree(session_filepath)
 
 def test_dmlrunner_train_job_returns_weights_omega_and_stats( \
-        config_manager, mnist_filepath, do_nothing):
+        config_manager, mnist_filepath):
     model_json = make_model_json()
     hyperparams = make_hyperparams()
     runner = DMLRunner(config_manager)
@@ -111,8 +107,7 @@ def test_dmlrunner_train_job_returns_weights_omega_and_stats( \
     initial_weights = runner.run_job(initialize_job).results['weights']
     transform_split_job = make_transform_split_job(
                             model_json, 
-                            mnist_filepath, 
-                            do_nothing
+                            mnist_filepath
                         )
     job_results = runner.run_job(transform_split_job)
     session_filepath = job_results.results['session_filepath']
@@ -140,7 +135,7 @@ def test_dmlrunner_train_job_returns_weights_omega_and_stats( \
 
 
 def test_dmlrunner_validate_job_returns_stats( \
-        config_manager, mnist_filepath, do_nothing):
+        config_manager, mnist_filepath):
     model_json = make_model_json()
     hyperparams = make_hyperparams()
     runner = DMLRunner(config_manager)
@@ -148,8 +143,7 @@ def test_dmlrunner_validate_job_returns_stats( \
     initial_weights = runner.run_job(initialize_job).results['weights']
     transform_split_job = make_transform_split_job(
                             model_json, 
-                            mnist_filepath, 
-                            do_nothing
+                            mnist_filepath
                         )
     job_results = runner.run_job(transform_split_job)
     session_filepath = job_results.results['session_filepath']

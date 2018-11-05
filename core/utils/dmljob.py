@@ -22,7 +22,7 @@ class DMLJob(object):
         label_column_name=None,
         raw_filepath=None,
         session_filepath=None,
-        transform_function=lambda x: x
+        transform_function=None
         ):
         """
         Initializes a DML Job object.
