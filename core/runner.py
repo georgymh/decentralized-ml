@@ -64,17 +64,16 @@ class DMLRunner(object):
             job.job_type,
             self.JOB_CALLBACKS,
         )
-        results = callback(job)
-        # try:
-        #     results = callback(job)
-        # except Exception as e:
-        #     logging.error("RunnerError: " + str(e))
-        #     results = DMLResult(
-        #         status='failed',
-        #         job=job,
-        #         error_message=str(e),
-        #         results={},
-        #     )
+        try:
+            results = callback(job)
+        except Exception as e:
+            logging.error("RunnerError: " + str(e))
+            results = DMLResult(
+                status='failed',
+                job=job,
+                error_message=str(e),
+                results={},
+            )
         self.current_job = None
         logging.info("Finished running job! (type: {0})".format(job.job_type))
         return results
@@ -293,7 +292,7 @@ class DMLRunner(object):
         split_index = int(len(transformed_data)*split)
         train = transformed_data.iloc[:split_index] 
         test = transformed_data.iloc[split_index:]
-        
+
         # 6. Create train.csv and test.csv in data folder.
         train.to_csv(
             os.path.join(session_filepath, 'train.csv'),
