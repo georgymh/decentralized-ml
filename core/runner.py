@@ -50,6 +50,7 @@ class DMLRunner(object):
             JobTypes.JOB_INIT.name: self._initialize_model,
             JobTypes.JOB_VAL.name: self._validate,
             JobTypes.JOB_TRANSFORM_SPLIT.name: self._transform_and_split_data
+        }
 
     def run_job(self, job):
         """
