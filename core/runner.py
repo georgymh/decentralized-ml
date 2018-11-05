@@ -44,12 +44,12 @@ class DMLRunner(object):
         self.iden = str(uuid.uuid4())[:8]
         
         self.config = dict(config.items("RUNNER"))
+        self.data_count = count_datapoints(self.dataset_path)
         self.JOB_CALLBACKS = {
             JobTypes.JOB_TRAIN.name: self._train,
             JobTypes.JOB_INIT.name: self._initialize_model,
             JobTypes.JOB_VAL.name: self._validate,
             JobTypes.JOB_TRANSFORM_SPLIT.name: self._transform_and_split_data
-        }
 
     def run_job(self, job):
         """
@@ -242,6 +242,7 @@ class DMLRunner(object):
                     error_message="",
                 )
         return results
+
 
     def _transform_and_split_data(self, job):
         """

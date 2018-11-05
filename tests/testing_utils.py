@@ -44,6 +44,7 @@ def make_hyperparams(split=0.004):
         'averaging_type': 'data_size',
         'batch_size': 4,
         'epochs': 1,
+
         'split': split,
     }
     return hyperparams

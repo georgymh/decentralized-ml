@@ -17,6 +17,7 @@ config_manager.bootstrap(
     config_filepath='tests/artifacts/communication_manager/configuration.ini'
 )
 
+
 @pytest.fixture
 def mnist_filepath():
     return 'tests/artifacts/datasets/mnist'

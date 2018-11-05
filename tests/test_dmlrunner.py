@@ -23,6 +23,7 @@ def config_manager():
     )
     return config_manager
 
+
 @pytest.fixture
 def sample_transform_function():
     return lambda x: x.drop_duplicates()

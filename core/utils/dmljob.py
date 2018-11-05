@@ -50,6 +50,7 @@ class DMLJob(object):
 
 
 
+
 def serialize_job(dmljob_obj):
     """
     Serializes a DML Job object into a dictionary.
