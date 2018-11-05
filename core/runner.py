@@ -337,18 +337,3 @@ class DMLRunner(object):
             filepath = os.path.join(folder_path, files[0])
             raw_dict[folder] = pd.read_csv(filepath)
         return raw_dict
-
-    # def get_transformed_data(self, job):
-    #     """
-    #     Extracts all transformed data from transform data filepath.
-
-    #     Assumes filepath contains csvfiles. Returns where
-    #     each (key, value) represents a csv file. Each key is the filename of the
-    #     csv (i.e. key.csv) and each value is a DataFrame of the actual data.
-    #     """
-    #     train_filepath = os.path.join(job.session_filepath, 'train')
-    #     test_filepath = os.path.join(job.session_filepath, 'test')
-
-    #     train = pd.read_csv(train_filepath)
-    #     test = pd.read_csv(test_filepath)
-    #     return transform_dict
