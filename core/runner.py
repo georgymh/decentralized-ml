@@ -231,7 +231,7 @@ class DMLRunner(object):
         Average the weights in the job weighted by their omegas.
         """
         deserialized_new_weights = deserialize_weights(job.new_weights)
-        averaged_weights = self.weighted_running_avg(job.weights, deserialized_new_weights, job.sigma_omega, job.omega)
+        averaged_weights = self._weighted_running_avg(job.weights, deserialized_new_weights, job.sigma_omega, job.omega)
         result = DMLResult(
             status='successful',
             job=job,
@@ -242,11 +242,13 @@ class DMLRunner(object):
         )
         return result
     
-    def weighted_running_avg(self, sigma_x_i_div_w_i, x_n, sigma_w_i, w_n):
+    def _weighted_running_avg(self, sigma_x_i_div_w_i, x_n, sigma_w_i, w_n):
         """
         Computes a weighting running average.
-        W_n is the weight of datapoint n.
-        X_n is a datapoint.
+        w_n is the weight of datapoint n.
+        x_n is a datapoint.
+        Sigma_x_i_div_w_i is the current weighted average.
+        Sigma_w_i is the sum of weights currently.
         """
         sigma_x_i = np.multiply(sigma_w_i, sigma_x_i_div_w_i)
         cma_n_plus_one = np.divide(np.add(x_n, sigma_x_i), np.add(w_n,sigma_w_i))
