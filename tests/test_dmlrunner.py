@@ -76,8 +76,7 @@ def test_dmlrunner_initialize_job_weights_can_be_serialized(config_manager):
     initialize_job = make_initialize_job(model_json)
     initial_weights = runner.run_job(initialize_job).results['weights']
     same_weights = deserialize_weights(serialize_weights(initial_weights))
-    assert(np.shape(same_weights) == np.shape(initial_weights))
-    assert all([np.count_nonzero(arr)==0 for arr in np.subtract(same_weights, initial_weights)])
+    assert all(np.allclose(arr1, arr2) for arr1,arr2 in zip(same_weights, initial_weights)) 
 
 def test_dmlrunner_averaging_weights(config_manager):
     model_json = make_model_json()
@@ -87,4 +86,4 @@ def test_dmlrunner_averaging_weights(config_manager):
     serialized_weights = serialize_weights(initial_weights)
     initialize_job.set_weights(initial_weights, serialized_weights, 1, 1)
     averaged_weights = runner._average(initialize_job).results['weights']
-    assert all([np.count_nonzero(arr)==0 for arr in np.subtract(averaged_weights, initial_weights)])
+    assert all(np.allclose(arr1, arr2) for arr1,arr2 in zip(averaged_weights, initial_weights)) 

@@ -112,7 +112,7 @@ def test_communication_manager_can_initialize_and_train_and_average_model():
         # communication job
         scheduler.runners_run_next_jobs()
         time.sleep(0.1)
-    assert len(scheduler.processed) == 3, "Communcation not completed in time!"
+    assert len(scheduler.processed) == 3, "Communication not completed in time!"
     # now the communication manager should be idle
     scheduler.runners_run_next_jobs()
     time.sleep(0.1)
