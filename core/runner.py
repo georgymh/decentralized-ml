@@ -16,7 +16,6 @@ from core.utils.dmlresult import DMLResult
 from core.utils.enums import JobTypes, callback_handler_no_default
 
 
-
 logging.basicConfig(level=logging.DEBUG,
                     format='[Runner] %(asctime)s %(levelname)s %(message)s')
 

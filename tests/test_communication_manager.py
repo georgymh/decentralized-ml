@@ -97,7 +97,7 @@ def test_communication_manager_can_initialize_and_train_and_average_model():
         # initialization job
         scheduler.runners_run_next_jobs()
         time.sleep(0.1)
-    assert len(scheduler.processed) == 1, "Initialization not completed in time!"
+    assert len(scheduler.processed) == 1, "Initialization failed/not completed in time!"
     assert communication_manager.optimizer.job.job_type == JobTypes.JOB_TRAIN.name, \
         "Should be ready to train!"
     timeout = time.time() + 3
@@ -105,7 +105,7 @@ def test_communication_manager_can_initialize_and_train_and_average_model():
         # training job
         scheduler.runners_run_next_jobs()
         time.sleep(0.1)
-    assert len(scheduler.processed) == 2, "Training not completed in time!"
+    assert len(scheduler.processed) == 2, "Training failed/not completed in time!"
     assert communication_manager.optimizer.job.job_type == JobTypes.JOB_COMM.name, \
         "Should be ready to communicate!"
     timeout = time.time() + 3
@@ -113,7 +113,7 @@ def test_communication_manager_can_initialize_and_train_and_average_model():
         # communication job
         scheduler.runners_run_next_jobs()
         time.sleep(0.1)
-    assert len(scheduler.processed) == 3, "Communication not completed in time!"
+    assert len(scheduler.processed) == 3, "Communication failed/not completed in time!"
     # now the communication manager should be idle
     scheduler.runners_run_next_jobs()
     time.sleep(0.1)
@@ -136,7 +136,7 @@ def test_communication_manager_can_initialize_and_train_and_average_model():
         # averaging job
         scheduler.runners_run_next_jobs()
         time.sleep(0.1)
-    assert len(scheduler.processed) == 4, "Averaging not completed in time!"
+    assert len(scheduler.processed) == 4, "Averaging failed/not completed in time!"
     # we've only heard one set of new weights so our listen_iters are 1
     assert communication_manager.optimizer.listen_iterations == 1, \
         "Should have only listened once!"
@@ -156,7 +156,7 @@ def test_communication_manager_can_initialize_and_train_and_average_model():
         # second averaging job
         scheduler.runners_run_next_jobs()
         time.sleep(0.1)
-    assert len(scheduler.processed) == 5, "Averaging not completed in time!"
+    assert len(scheduler.processed) == 5, "Averaging failed/not completed in time!"
     # we've heard both sets of new weights so our listen_iters are 2
     assert communication_manager.optimizer.listen_iterations == 0, \
         "Either did not hear anything, or heard too much!"
