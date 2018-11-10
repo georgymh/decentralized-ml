@@ -78,6 +78,22 @@ class DMLRunner(object):
         logging.info("Finished running job! (type: {0})".format(job.job_type))
         return results
 
+    def _set_up(self, job):
+        assert job.session_filepath, \
+            "Transformed training and test sets not created yet!"
+        train_path = os.path.join(
+                                job.session_filepath, 
+                                'train.csv'
+                            )
+        test_path = os.path.join(
+                                job.session_filepath, 
+                                'test.csv'
+                            )
+        data_count = count_datapoints(job.session_filepath)
+
+        return train_path, test_path, data_count
+
+
     def _train(self, job):
         """
         Trains the specified machine learning model on all the local data,
@@ -92,17 +108,9 @@ class DMLRunner(object):
 
         NOTE2: Assumes 'job.weights' are the actual weights and not a path.
         """
-        assert job.session_filepath, \
-            "Transformed training and test sets not created yet!"
-        train_dataset_path = os.path.join(
-                                job.session_filepath, 
-                                'train.csv'
-                            )
-        test_dataset_path = os.path.join(
-                                job.session_filepath, 
-                                'test.csv'
-                            )
-        data_count = count_datapoints(job.session_filepath)
+        
+        train_dataset_path, test_dataset_path, data_count = self._set_up(job)
+
         # Get the right dataset iterator based on the averaging type.
         avg_type = job.hyperparams['averaging_type']
         batch_size = job.hyperparams['batch_size']
@@ -176,17 +184,8 @@ class DMLRunner(object):
         NOTE: Assumes 'weights' are the actual weights and not a path.
         """
         logging.info("Validating model...")
-        assert job.session_filepath, \
-            "Transformed training and test sets not created yet!"
-        train_dataset_path = os.path.join(
-                                job.session_filepath, 
-                                'train.csv'
-                            )
-        test_dataset_path = os.path.join(
-                                job.session_filepath, 
-                                'test.csv'
-                            )
-        data_count = count_datapoints(job.session_filepath)
+        
+        train_dataset_path, test_dataset_path, data_count = self._set_up(job)
         # Choose the dataset to validate on.
         batch_size = job.hyperparams['batch_size']
         split = job.hyperparams['split']

@@ -36,29 +36,6 @@ def mnist_filepath():
 def small_filepath():
     return 'tests/artifacts/runner_scheduler/test'
 
-def accurate_transform_test(dsm, expected_test_transformed, split):
-    """
-    Check that the data in this folder is the result of calling the transform function on
-    each csv in the raw data filepath
-    """
-    transform_dsm = dsm.get_transformed_data()
-    keys = list(transform_dsm.keys())
-    train = transform_dsm['train']
-    test = transform_dsm['test']
-    count = len(expected_test_transformed)
-    assert len(train) == int(split * count)
-    assert len(test) == int((1 - split) * count)
-    actual_test_transformed = train.append(test)
-    actual_test_transformed = actual_test_transformed.reset_index(drop=True)
-    merged_data = pd.merge(
-        actual_test_transformed,
-        expected_test_transformed,
-        on = ['a', 'b', 'c'],
-        how = 'inner'
-    )
-    assert len(actual_test_transformed) == count
-    assert len(merged_data) == count
-
 def test_dmlrunner_initialize_job_returns_list_of_nparray(config_manager):
     model_json = make_model_json()
     runner = DMLRunner(config_manager)
