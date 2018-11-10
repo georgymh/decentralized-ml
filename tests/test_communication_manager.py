@@ -71,6 +71,7 @@ def test_communication_manager_can_initialize_and_train_and_average_model():
     (32) Optimizer updates its weights to initialized model and increments listen_iterations
     (33) Optimizer tells Communication Manager to schedule a training job since it's heard enough
 
+    NOTE: Timeout errors can be as a result of Runners repeatedly erroring. Check logs for this.
     """
     communication_manager = CommunicationManager()
     scheduler = DMLScheduler(config_manager)
