@@ -46,7 +46,7 @@ class DMLRunner(object):
         self.config = dict(config.items("RUNNER"))
         self.JOB_CALLBACKS = {
             JobTypes.JOB_TRAIN.name: self._train,
-            JobTypes.JOB_INIT.name: self._initialize_model,
+            JobTypes.JOB_INIT.name: self._initialize,
             JobTypes.JOB_VAL.name: self._validate,
             JobTypes.JOB_TRANSFORM_SPLIT.name: self._transform_and_split_data,
             JobTypes.JOB_AVG.name: self._average,
