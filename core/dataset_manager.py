@@ -4,6 +4,7 @@ import datetime
 import string
 import random
 import os
+import yaml
 
 import numpy as np
 import pandas as pd
@@ -50,7 +51,8 @@ class DatasetManager():
         config = config_manager.get_config()
         raw_filepath = config['GENERAL']['dataset_path']
         assert os.path.isdir(raw_filepath), "The dataset filepath provided is not valid."
-        self.rfp = raw_filepath
+        self.raw_filepath = raw_filepath
+        self.mappings = None
         self._validate_data()
 
     def _validate_data(self):
@@ -68,8 +70,8 @@ class DatasetManager():
                           "message from pandas for more information: {message}")
         header_message = ("No header has been provided in file {file} in "
                           "folder {folder}")
-        for folder in os.listdir(self.rfp):
-            folder_path = os.path.join(os.path.abspath(self.rfp), folder)
+        for folder in os.listdir(self.raw_filepath):
+            folder_path = os.path.join(os.path.abspath(self.raw_filepath), folder)
             if not os.path.isdir(folder_path): continue
             files = os.listdir(folder_path)
             for file in files:
@@ -94,6 +96,25 @@ class DatasetManager():
                         folder=folder
                     )
 
+    def bootstrap(self, mapping_filepath="core/datasets.yaml"):
+        if self.mappings:
+            return False
+        if os.path.isfile(mapping_filepath):
+            with open(mapping_filepath, "r") as f:
+                self.mappings = yaml.load(f.readlines())
+        else:
+            self.create_dataset_mappings(mapping_filepath)
+        return True
+        
+    def _create_dataset_mappings(self, mapping_filepath):
+        mappings = {}
+        for folder in self.raw_filepath:
+            encoding = uuid.uuid4()
+            mappings[encoding] = folder
+        self.mappings = mappings
+        with open(mapping_filepath, "w") as f:
+            f.write(yaml.dump(mapping))
+
     def check_key_length(key):
         """
         Keys for datasets can only be at most 30 characters long.
@@ -108,7 +129,7 @@ class DatasetManager():
 
         IMPORTANT: NOT FINISHED DEBUGGING, DO NOT USE
         """
-        filepath = self.rfp
+        filepath = self.raw_filepath
         self.check_key_length(name)
         value = {}
         folders = []
@@ -141,7 +162,7 @@ class DatasetManager():
 
         IMPORTANT: NOT FINISHED DEBUGGING, DO NOT USE
         """
-        filepath = self.rfp
+        filepath = self.raw_filepath
         self.check_key_length(name)
         value = {}
         folders = []

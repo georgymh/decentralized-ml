@@ -8,7 +8,7 @@ import shutil
 
 from core.runner                import DMLRunner
 from core.configuration         import ConfigurationManager
-from core.utils.keras           import serialize_weights
+from core.utils.keras           import serialize_weights, deserialize_weights
 from core.utils.enums           import JobTypes
 from tests.testing_utils        import make_initialize_job, make_model_json
 from tests.testing_utils        import make_train_job, make_validate_job, make_hyperparams
