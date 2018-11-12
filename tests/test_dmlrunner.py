@@ -13,7 +13,7 @@ from core.utils.enums           import JobTypes
 from tests.testing_utils        import make_initialize_job, make_model_json
 from tests.testing_utils        import make_train_job, make_validate_job, make_hyperparams
 from tests.testing_utils        import make_transform_split_job
-                                       
+ 
 
 @pytest.fixture
 def config_manager():
@@ -22,7 +22,6 @@ def config_manager():
         config_filepath='tests/artifacts/runner_scheduler/configuration.ini'
     )
     return config_manager
-
 
 @pytest.fixture
 def sample_transform_function():
@@ -151,3 +150,21 @@ def test_dmlrunner_validate_job_returns_stats( \
     # Clean up
     if os.path.isdir(session_filepath):
         shutil.rmtree(session_filepath)
+
+def test_dmlrunner_initialize_job_weights_can_be_serialized(config_manager):
+    model_json = make_model_json()
+    runner = DMLRunner(config_manager)
+    initialize_job = make_initialize_job(model_json)
+    initial_weights = runner.run_job(initialize_job).results['weights']
+    same_weights = deserialize_weights(serialize_weights(initial_weights))
+    assert all(np.allclose(arr1, arr2) for arr1,arr2 in zip(same_weights, initial_weights)) 
+
+def test_dmlrunner_averaging_weights(config_manager):
+    model_json = make_model_json()
+    runner = DMLRunner(config_manager)
+    initialize_job = make_initialize_job(model_json)
+    initial_weights = runner.run_job(initialize_job).results['weights']
+    serialized_weights = serialize_weights(initial_weights)
+    initialize_job.set_weights(initial_weights, serialized_weights, 1, 1)
+    averaged_weights = runner._average(initialize_job).results['weights']
+    assert all(np.allclose(arr1, arr2) for arr1,arr2 in zip(averaged_weights, initial_weights)) 
