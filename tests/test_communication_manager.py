@@ -184,7 +184,7 @@ def test_communication_manager_fails_if_not_configured():
     configured.
     """
     communication_manager = CommunicationManager()
-    serialized_job = make_serialized_job(mnist_filepath)
+    serialized_job = make_serialized_job()
     new_session_event = {
         "key": None,
         "content": {
@@ -211,7 +211,7 @@ def test_communication_manager_creates_new_sessions():
     scheduler = DMLScheduler(config_manager)
     communication_manager.configure(scheduler)
     scheduler.configure(communication_manager)
-    serialized_job = make_serialized_job(mnist_filepath)
+    serialized_job = make_serialized_job()
     new_session_event = {
         "key": None,
         "content": {

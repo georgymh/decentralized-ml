@@ -46,7 +46,7 @@ def test_dmlrunner_initialize_job_returns_list_of_nparray(config_manager):
     assert type(initial_weights) == list
     assert type(initial_weights[0]) == np.ndarray
 
-def test_dmlrunner_train_test_split( \
+def test_dmlrunner_transform_and_split( \
         config_manager, small_filepath, sample_transform_function):
     model_json = make_model_json()
     runner = DMLRunner(config_manager)
@@ -88,11 +88,49 @@ def test_dmlrunner_train_job_returns_weights_omega_and_stats( \
                         )
     job_results = runner.run_job(transform_split_job)
     session_filepath = job_results.results['session_filepath']
+    datapoint_count = job_results.results['datapoint_count']
     train_job = make_train_job(
                     model_json, 
                     initial_weights, 
                     hyperparams, 
-                    session_filepath
+                    session_filepath,
+                    datapoint_count
+                )
+    result = runner.run_job(train_job)
+    results = result.results
+    new_weights = results['weights']
+    omega = results['omega']
+    train_stats = results['train_stats']
+    assert result.job.job_type is JobTypes.JOB_TRAIN.name
+    assert type(new_weights) == list
+    assert type(new_weights[0]) == np.ndarray
+    assert type(omega) == int or type(omega) == float
+    assert type(train_stats) == dict
+
+    # Clean up
+    if os.path.isdir(session_filepath):
+        shutil.rmtree(session_filepath)
+
+def test_dmlrunner_same_train_job_with_split_1( \
+        config_manager, mnist_filepath):
+    model_json = make_model_json()
+    hyperparams = make_hyperparams(split=1)
+    runner = DMLRunner(config_manager)
+    initialize_job = make_initialize_job(model_json)
+    initial_weights = runner.run_job(initialize_job).results['weights']
+    transform_split_job = make_transform_split_job(
+                            model_json, 
+                            mnist_filepath
+                        )
+    job_results = runner.run_job(transform_split_job)
+    session_filepath = job_results.results['session_filepath']
+    datapoint_count = job_results.results['datapoint_count']
+    train_job = make_train_job(
+                    model_json, 
+                    initial_weights, 
+                    hyperparams, 
+                    session_filepath,
+                    datapoint_count
                 )
     result = runner.run_job(train_job)
     results = result.results
@@ -124,11 +162,13 @@ def test_dmlrunner_validate_job_returns_stats( \
                         )
     job_results = runner.run_job(transform_split_job)
     session_filepath = job_results.results['session_filepath']
+    datapoint_count = job_results.results['datapoint_count']
     train_job = make_train_job(
                     model_json, 
                     initial_weights, 
                     hyperparams, 
-                    session_filepath
+                    session_filepath,
+                    datapoint_count
                 )
     result = runner.run_job(train_job)
     results = result.results
@@ -139,7 +179,8 @@ def test_dmlrunner_validate_job_returns_stats( \
     validate_job = make_validate_job(model_json, 
                     new_weights, 
                     hyperparams, 
-                    session_filepath
+                    session_filepath,
+                    datapoint_count
                 )
     result = runner.run_job(validate_job)
     results = result.results

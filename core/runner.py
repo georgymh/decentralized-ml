@@ -66,16 +66,17 @@ class DMLRunner(object):
             job.job_type,
             self.JOB_CALLBACKS,
         )
-        try:
-            results = callback(job)
-        except Exception as e:
-            logging.error("RunnerError: " + str(e))
-            results = DMLResult(
-                status='failed',
-                job=job,
-                error_message=str(e),
-                results={},
-            )
+        results = callback(job)
+        # try:
+        #     results = callback(job)
+        # except Exception as e:
+        #     logging.error("RunnerError: " + str(e))
+        #     results = DMLResult(
+        #         status='failed',
+        #         job=job,
+        #         error_message=str(e),
+        #         results={},
+        #     )
         self.current_job = None
         logging.info("Finished running job! (type: {0})".format(job.job_type))
         return results
@@ -91,9 +92,7 @@ class DMLRunner(object):
                                 job.session_filepath, 
                                 'test.csv'
                             )
-        data_count = count_datapoints(job.session_filepath)
-
-        return train_path, test_path, data_count
+        return train_path, test_path
 
     def _train(self, job):
         """
@@ -110,7 +109,8 @@ class DMLRunner(object):
         NOTE2: Assumes 'job.weights' are the actual weights and not a path.
         """
         
-        train_dataset_path, test_dataset_path, data_count = self._set_up(job)
+        train_dataset_path, test_dataset_path = self._set_up(job)
+        data_count = job.datapoint_count
 
         # Get the right dataset iterator based on the averaging type.
         avg_type = job.hyperparams['averaging_type']
@@ -187,7 +187,8 @@ class DMLRunner(object):
         """
         logging.info("Validating model...")
         
-        train_dataset_path, test_dataset_path, data_count = self._set_up(job)
+        train_dataset_path, test_dataset_path = self._set_up(job)
+        data_count = job.datapoint_count
         # Choose the dataset to validate on.
         batch_size = job.hyperparams['batch_size']
         split = job.hyperparams['split']
@@ -305,12 +306,17 @@ class DMLRunner(object):
             index=False
         )
 
-        # 7. Return job with assigned session folder filepath
+        # 7. Get datapoint count to be used in future jobs
+        datapoint_count = count_datapoints(session_filepath)
+
+        # 8. Return job with assigned session folder filepath and
+        #    datapoint count.
         results = DMLResult(
                     status='successful',
                     job=job,
                     results = {
-                        'session_filepath': session_filepath
+                        'session_filepath': session_filepath,
+                        'datapoint_count': datapoint_count
                     },
                     error_message=""
                 )

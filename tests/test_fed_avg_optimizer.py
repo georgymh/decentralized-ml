@@ -10,6 +10,7 @@ from core.utils.enums import JobTypes, RawEventTypes, ActionableEventTypes
 from core.fed_avg_optimizer import FederatedAveragingOptimizer
 from core.runner import DMLRunner
 from core.configuration import ConfigurationManager
+from data.iterators import count_datapoints
 
 @pytest.fixture
 def config_manager():
@@ -47,6 +48,7 @@ def train_dmlresult_obj(config_manager, mnist_filepath, init_dmlresult_obj):
                     initial_weights, 
                     make_hyperparams(),
                     mnist_filepath,
+                    count_datapoints(mnist_filepath)
                 )
     result = runner.run_job(train_job)
     return result
