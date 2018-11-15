@@ -20,7 +20,7 @@ config_manager.bootstrap(
 
 @pytest.fixture
 def mnist_filepath():
-    return 'tests/artifacts/datasets/mnist'
+    return 'tests/artifacts/communication_manager/mnist'
 
 def test_communication_manager_can_initialize_and_train_model(mnist_filepath):
     """
@@ -101,17 +101,12 @@ def test_communication_manager_can_initialize_and_train_model(mnist_filepath):
         # initialization job
         scheduler.runners_run_next_jobs()
         time.sleep(0.1)
-    assert len(scheduler.processed) == 1, "Initialization failed/not completed in time!"
-    timeout = time.time() + 3
-    while time.time() < timeout and len(scheduler.processed) == 0:
-        # initialization job
-        scheduler.runners_run_next_jobs()
-        time.sleep(0.1)
     assert len(scheduler.processed) == 2, "Initialization failed/not completed in time!"
+    timeout = time.time() + 3
     assert communication_manager.optimizer.job.job_type == JobTypes.JOB_TRAIN.name, \
         "Should be ready to train!"
     timeout = time.time() + 3
-    while time.time() < timeout and len(scheduler.processed) == 1:
+    while time.time() < timeout and len(scheduler.processed) == 2:
         # training job
         scheduler.runners_run_next_jobs()
         time.sleep(0.1)
@@ -119,7 +114,7 @@ def test_communication_manager_can_initialize_and_train_model(mnist_filepath):
     assert communication_manager.optimizer.job.job_type == JobTypes.JOB_COMM.name, \
         "Should be ready to communicate!"
     timeout = time.time() + 3
-    while time.time() < timeout and len(scheduler.processed) == 2:
+    while time.time() < timeout and len(scheduler.processed) == 3:
         # communication job
         scheduler.runners_run_next_jobs()
         time.sleep(0.1)
@@ -142,7 +137,7 @@ def test_communication_manager_can_initialize_and_train_model(mnist_filepath):
     assert communication_manager.optimizer.job.job_type == JobTypes.JOB_AVG.name, \
         "Should be ready to average!"
     timeout = time.time() + 3
-    while time.time() < timeout and len(scheduler.processed) == 3:
+    while time.time() < timeout and len(scheduler.processed) == 4:
         # averaging job
         scheduler.runners_run_next_jobs()
         time.sleep(0.1)
@@ -162,7 +157,7 @@ def test_communication_manager_can_initialize_and_train_model(mnist_filepath):
     assert communication_manager.optimizer.job.job_type == JobTypes.JOB_AVG.name, \
         "Should be ready to average!"
     timeout = time.time() + 3
-    while time.time() < timeout and len(scheduler.processed) == 4:
+    while time.time() < timeout and len(scheduler.processed) == 5:
         # second averaging job
         scheduler.runners_run_next_jobs()
         time.sleep(0.1)

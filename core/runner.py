@@ -66,17 +66,16 @@ class DMLRunner(object):
             job.job_type,
             self.JOB_CALLBACKS,
         )
-        results = callback(job)
-        # try:
-        #     results = callback(job)
-        # except Exception as e:
-        #     logging.error("RunnerError: " + str(e))
-        #     results = DMLResult(
-        #         status='failed',
-        #         job=job,
-        #         error_message=str(e),
-        #         results={},
-        #     )
+        try:
+            results = callback(job)
+        except Exception as e:
+            logging.error("RunnerError: " + str(e))
+            results = DMLResult(
+                status='failed',
+                job=job,
+                error_message=str(e),
+                results={},
+            )
         self.current_job = None
         logging.info("Finished running job! (type: {0})".format(job.job_type))
         return results
@@ -262,7 +261,11 @@ class DMLRunner(object):
         # 1. Extracts all of the raw data from raw data filepath
         assert job.raw_filepath, \
             "Raw data filepath has not been set!"
-        assert job.transform_function, \
+        # 1.5. "Retrieve" transform function from job
+        transform_function = job.transform_function
+        if not transform_function:
+            transform_function = lambda x: x
+        assert transform_function, \
             "Transform function has not been set!"
         files = os.listdir(job.raw_filepath)
         files = list(filter(lambda x: x.endswith('.csv'), files))
@@ -284,8 +287,7 @@ class DMLRunner(object):
         session_filepath = os.path.join(transformed_filepath, new_name)
         os.makedirs(session_filepath)
 
-        # 4. Retrieve transform function and train-test split from job.
-        transform_function = job.transform_function
+        # 4. Retrieve train-test split from job.
         split = job.hyperparams['split']
 
         # 5. Shuffle raw data, then split into train and test set.

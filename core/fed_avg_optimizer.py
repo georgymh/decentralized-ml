@@ -2,7 +2,7 @@ import logging
 
 from core.utils.enums 		import ActionableEventTypes, RawEventTypes, MessageEventTypes
 from core.utils.enums 		import JobTypes, callback_handler_no_default
-from core.utils.dmljob 		import deserialize_job
+from core.utils.dmljob 		import deserialize_job, DMLJob
 from core.utils.keras 		import serialize_weights
 from core.utils.dmlresult 	import DMLResult
 
@@ -78,13 +78,33 @@ class FederatedAveragingOptimizer(object):
 		Creates a job that transforms and splits the dataset, and also
 		randomly initializes the model.
 		"""
-		# TODO: Fix this
-		self.job.transform_function = lambda x: x
 		job_arr = []
-		self.job.job_type = JobTypes.JOB_INIT.name
-		job_arr.append(self.job)
-		self.job.job_type = JobTypes.JOB_TRANSFORM_SPLIT.name
-		job_arr.append(self.job)
+		job_one = DMLJob(
+			job_type=JobTypes.JOB_INIT.name,
+			serialized_model=self.job.serialized_model,
+			framework_type=self.job.framework_type,
+			weights=self.job.weights,
+			hyperparams=self.job.hyperparams,
+			label_column_name=self.job.label_column_name,
+			raw_filepath=self.job.raw_filepath,
+			session_filepath=self.job.session_filepath,
+			transform_function=self.job.transform_function,
+			datapoint_count=self.job.datapoint_count
+		)
+		job_arr.append(job_one)
+		job_two = DMLJob(
+			job_type=JobTypes.JOB_TRANSFORM_SPLIT.name,
+			serialized_model=self.job.serialized_model,
+			framework_type=self.job.framework_type,
+			weights=self.job.weights,
+			hyperparams=self.job.hyperparams,
+			label_column_name=self.job.label_column_name,
+			raw_filepath=self.job.raw_filepath,
+			session_filepath=self.job.session_filepath,
+			transform_function=self.job.transform_function,
+			datapoint_count=self.job.datapoint_count
+		)
+		job_arr.append(job_two)
 		return ActionableEventTypes.SCHEDULE_JOB.name, job_arr
 
 	def ask(self, event_type, payload):
@@ -129,6 +149,7 @@ class FederatedAveragingOptimizer(object):
 		and modifies the current state of the job.
 		"""
 		self.job.session_filepath = dmlresult_obj.results['session_filepath']
+		self.job.datapoint_count = dmlresult_obj.results['datapoint_count']
 		if self.job.job_type == JobTypes.JOB_TRAIN.name:
 			return ActionableEventTypes.SCHEDULE_JOB.name, [self.job]
 		else:
