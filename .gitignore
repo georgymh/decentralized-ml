@@ -8,7 +8,8 @@ core/configuration.ini
 __pycache__/
 .pytest_cache/
 .cache/
-
+tests/artifacts/runner_scheduler/mnist/transformed/
+tests/artifacts/runner_scheduler/test/transformed/
 datasets/shakespeare
 
 core/utils/weights

@@ -208,4 +208,4 @@ def test_dmlrunner_averaging_weights(config_manager):
     serialized_weights = serialize_weights(initial_weights)
     initialize_job.set_weights(initial_weights, serialized_weights, 1, 1)
     averaged_weights = runner._average(initialize_job).results['weights']
-    assert all(np.allclose(arr1, arr2) for arr1,arr2 in zip(averaged_weights, initial_weights)) 
+    assert all(np.allclose(arr1, arr2) for arr1,arr2 in zip(averaged_weights, initial_weights))

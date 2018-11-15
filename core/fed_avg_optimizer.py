@@ -63,7 +63,7 @@ class FederatedAveragingOptimizer(object):
 			JobTypes.JOB_INIT.name: self._done_initializing,
 			JobTypes.JOB_AVG.name: self._done_averaging,
 			JobTypes.JOB_COMM.name: self._done_communicating,
-			# TODO: Support COMM and AVG soon.
+			JobTypes.JOB_TRANSFORM_SPLIT.name: self._done_transform_and_split,
 		}
 		self.LEVEL_2_INFO_CALLBACKS = {
 			MessageEventTypes.NEW_WEIGHTS.name: self._received_new_weights,
@@ -78,8 +78,14 @@ class FederatedAveragingOptimizer(object):
 		Creates a job that transforms and splits the dataset, and also
 		randomly initializes the model.
 		"""
+		# TODO: Fix this
+		self.job.transform_function = lambda x: x
+		job_arr = []
 		self.job.job_type = JobTypes.JOB_INIT.name
-		return ActionableEventTypes.SCHEDULE_JOB.name, self.job
+		job_arr.append(self.job)
+		self.job.job_type = JobTypes.JOB_TRANSFORM_SPLIT.name
+		job_arr.append(self.job)
+		return ActionableEventTypes.SCHEDULE_JOB.name, job_arr
 
 	def ask(self, event_type, payload):
 		"""
@@ -105,12 +111,29 @@ class FederatedAveragingOptimizer(object):
 	def _done_initializing(self, dmlresult_obj):
 		"""
 		"LEVEL 2" Callback for a initialization job that just completed. Returns
-		a DML Job of type train and modifies the current state of the job.
+		a DML Job of type train unless transforming and splitting is not yet done
+		and modifies the current state of the job.
 		"""
 		new_weights = dmlresult_obj.results.get('weights')
 		self._update_weights(new_weights)
-		self.job.job_type = JobTypes.JOB_TRAIN.name
-		return ActionableEventTypes.SCHEDULE_JOB.name, self.job
+		if self.job.job_type == JobTypes.JOB_TRAIN.name:
+			return ActionableEventTypes.SCHEDULE_JOB.name, [self.job]
+		else:
+			self.job.job_type = JobTypes.JOB_TRAIN.name
+			return ActionableEventTypes.NOTHING.name, self.job
+
+	def _done_transform_and_split(self, dmlresult_obj):
+		"""
+		"LEVEL 2" Callback for a transform and split job that just finished.
+		Returns a DML Job of type train unless initialization is not yet done
+		and modifies the current state of the job.
+		"""
+		self.job.session_filepath = dmlresult_obj.results['session_filepath']
+		if self.job.job_type == JobTypes.JOB_TRAIN.name:
+			return ActionableEventTypes.SCHEDULE_JOB.name, [self.job]
+		else:
+			self.job.job_type = JobTypes.JOB_TRAIN.name
+			return ActionableEventTypes.NOTHING.name, self.job
 
 	def _done_training(self, dmlresult_obj):
 		"""
@@ -124,7 +147,7 @@ class FederatedAveragingOptimizer(object):
 		new_weights = dmlresult_obj.results.get('weights')
 		self._update_weights(new_weights)
 		self.job.job_type = JobTypes.JOB_COMM.name
-		return ActionableEventTypes.SCHEDULE_JOB.name, self.job
+		return ActionableEventTypes.SCHEDULE_JOB.name, [self.job]
 
 	def _done_averaging(self, dmlresult_obj):
 		new_weights = dmlresult_obj.results.get('weights')
@@ -133,7 +156,7 @@ class FederatedAveragingOptimizer(object):
 		if self.listen_iterations >= self.listen_bound:
 			self.job.job_type = JobTypes.JOB_TRAIN.name
 			self.listen_iterations = 0
-			return ActionableEventTypes.SCHEDULE_JOB.name, self.job
+			return ActionableEventTypes.SCHEDULE_JOB.name, [self.job]
 		else:
 			return ActionableEventTypes.NOTHING.name, self.job
 
@@ -165,7 +188,7 @@ class FederatedAveragingOptimizer(object):
 		"""
 		self.job.job_type = JobTypes.JOB_AVG.name
 		self.job.set_weights(self.job.weights, payload["content"]["weights"], 1, 1)
-		return ActionableEventTypes.SCHEDULE_JOB.name, self.job
+		return ActionableEventTypes.SCHEDULE_JOB.name, [self.job]
 
 	# def _received_termination(self, payload):
 	# 	"""

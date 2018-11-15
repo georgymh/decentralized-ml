@@ -17,13 +17,14 @@ def make_model_json():
     }
     return model_json
 
-def make_initialize_job(model_json):
+def make_initialize_job(model_json, raw_filepath=None):
     initialize_job = DMLJob(
         JobTypes.JOB_INIT.name,
         model_json,
         "keras",
         hyperparams=make_hyperparams(),
-        label_column_name='label'
+        label_column_name='label',
+        raw_filepath=raw_filepath,
     )
     return initialize_job
 
@@ -63,16 +64,16 @@ def make_train_job(model_json, initial_weights, hyperparams, \
     )
     return train_job
 
-def make_serialized_job(session_filepath=None):
+def make_serialized_job(raw_filepath):
     """
     TODO: Optimizer should handle transform/split so that datapoint_count
     and session_filepath don't have to be attached manually.
     """
-    initialize_job = make_initialize_job(make_model_json())
-    if session_filepath:
-        datapoint_count = count_datapoints(session_filepath)
-        initialize_job.datapoint_count = datapoint_count
-        initialize_job.session_filepath = session_filepath
+    initialize_job = make_initialize_job(make_model_json(), raw_filepath)
+    # if session_filepath:
+    #     datapoint_count = count_datapoints(session_filepath)
+    #     initialize_job.datapoint_count = datapoint_count
+    #     initialize_job.session_filepath = session_filepath
     serialized_job = serialize_job(initialize_job)
     return serialized_job
 
