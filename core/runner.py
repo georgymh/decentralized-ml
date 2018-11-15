@@ -285,11 +285,10 @@ class DMLRunner(object):
         split = job.hyperparams['split']
 
         # 5. Shuffle raw data, then split into train and test set.
-        transformed_data = raw_data
-        transformed_data = transformed_data.sample(frac=1)
-        split_index = int(len(transformed_data)*split)
-        train = transformed_data.iloc[:split_index] 
-        test = transformed_data.iloc[split_index:]
+        raw_data = raw_data.sample(frac=1)
+        split_index = int(len(raw_data)*split)
+        train = raw_data.iloc[:split_index] 
+        test = raw_data.iloc[split_index:]
 
         # 6. Create train.csv and test.csv in data folder.
         train.to_csv(

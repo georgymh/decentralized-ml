@@ -102,15 +102,15 @@ class CommunicationManager(object):
         callback(payload)
         logging.info("Kickoff complete.")
 
-    def _schedule_job(self, dmljob_obj_arr):
+    def _schedule_jobs(self, dmljob_obj_arr):
         """
         Helper function that schedules a DML Job through the Scheduler.
         """
         if not self.scheduler:
             raise Exception("Communication Manager needs to be configured first!")
         for dmljob_obj in dmljob_obj_arr:
-            if not isinstance(dmljob_obj, DMLJob):
-                raise Exception("Job is not valid!")
+            assert isinstance(dmljob_obj, DMLJob), \
+                "Is not DMLJob, is {}".format(type(dmljob_obj))
             self.scheduler.add_job(dmljob_obj)
 
     def _terminate_session(self, payload):
