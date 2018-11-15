@@ -261,12 +261,6 @@ class DMLRunner(object):
         # 1. Extracts all of the raw data from raw data filepath
         assert job.raw_filepath, \
             "Raw data filepath has not been set!"
-        # 1.5. "Retrieve" transform function from job
-        transform_function = job.transform_function
-        if not transform_function:
-            transform_function = lambda x: x
-        assert transform_function, \
-            "Transform function has not been set!"
         files = os.listdir(job.raw_filepath)
         files = list(filter(lambda x: x.endswith('.csv'), files))
         assert len(files) == 1, \
@@ -291,7 +285,7 @@ class DMLRunner(object):
         split = job.hyperparams['split']
 
         # 5. Shuffle raw data, then split into train and test set.
-        transformed_data = transform_function(raw_data)
+        transformed_data = raw_data
         transformed_data = transformed_data.sample(frac=1)
         split_index = int(len(transformed_data)*split)
         train = transformed_data.iloc[:split_index] 

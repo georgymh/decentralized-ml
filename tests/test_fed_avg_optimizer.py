@@ -28,10 +28,6 @@ def initialization_payload(small_filepath):
     }
 
 @pytest.fixture
-def sample_transform_function():
-    return lambda x: x.drop_duplicates()
-
-@pytest.fixture
 def mnist_filepath():
     return 'tests/artifacts/runner_scheduler/mnist'
 
@@ -47,13 +43,12 @@ def init_dmlresult_obj(config_manager, small_filepath):
     return result
 
 @pytest.fixture
-def transform_dmlresult_obj(config_manager, mnist_filepath, sample_transform_function):
+def transform_dmlresult_obj(config_manager, mnist_filepath):
     model_json = make_model_json()
     runner = DMLRunner(config_manager)
     transform_split_job = make_transform_split_job(
                             model_json, 
                             mnist_filepath,
-                            sample_transform_function
                         )
     transform_split_job.hyperparams['split'] = 0.75
     job_results = runner.run_job(transform_split_job)
@@ -90,7 +85,7 @@ def test_optimizer_fails_on_wrong_event_type(initialization_payload):
 def test_optimizer_can_kickoff(initialization_payload):
     optimizer = FederatedAveragingOptimizer(initialization_payload)
     event_type, job_arr = optimizer.kickoff()
-    assert event_type == ActionableEventTypes.SCHEDULE_JOB.name
+    assert event_type == ActionableEventTypes.SCHEDULE_JOBS.name
     for job in job_arr:
         assert job.job_type == JobTypes.JOB_INIT.name or job.job_type == JobTypes.JOB_TRANSFORM_SPLIT.name
 
@@ -102,7 +97,7 @@ def test_optimizer_schedules_training_after_initialization(initialization_payloa
     assert all(np.allclose(arr1, arr2) for arr1,arr2 in zip(optimizer.job.weights, initial_weights))    
     assert event_type == ActionableEventTypes.NOTHING.name
     event_type, job_arr = optimizer.ask(RawEventTypes.JOB_DONE.name, transform_dmlresult_obj)
-    assert event_type == ActionableEventTypes.SCHEDULE_JOB.name
+    assert event_type == ActionableEventTypes.SCHEDULE_JOBS.name
     for job in job_arr:
         assert job.job_type == JobTypes.JOB_TRAIN.name
 
@@ -112,6 +107,6 @@ def test_optimizer_schedules_communication_after_training(initialization_payload
     event_type, job_arr = optimizer.ask(RawEventTypes.JOB_DONE.name, train_dmlresult_obj)
     trained_weights = train_dmlresult_obj.results['weights']
     assert all(np.allclose(arr1, arr2) for arr1,arr2 in zip(optimizer.job.weights, trained_weights))
-    assert event_type == ActionableEventTypes.SCHEDULE_JOB.name
+    assert event_type == ActionableEventTypes.SCHEDULE_JOBS.name
     for job in job_arr:
         assert job.job_type == JobTypes.JOB_COMM.name

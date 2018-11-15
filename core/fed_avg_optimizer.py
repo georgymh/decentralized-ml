@@ -88,7 +88,6 @@ class FederatedAveragingOptimizer(object):
 			label_column_name=self.job.label_column_name,
 			raw_filepath=self.job.raw_filepath,
 			session_filepath=self.job.session_filepath,
-			transform_function=self.job.transform_function,
 			datapoint_count=self.job.datapoint_count
 		)
 		job_arr.append(job_one)
@@ -101,11 +100,10 @@ class FederatedAveragingOptimizer(object):
 			label_column_name=self.job.label_column_name,
 			raw_filepath=self.job.raw_filepath,
 			session_filepath=self.job.session_filepath,
-			transform_function=self.job.transform_function,
 			datapoint_count=self.job.datapoint_count
 		)
 		job_arr.append(job_two)
-		return ActionableEventTypes.SCHEDULE_JOB.name, job_arr
+		return ActionableEventTypes.SCHEDULE_JOBS.name, job_arr
 
 	def ask(self, event_type, payload):
 		"""
@@ -137,10 +135,10 @@ class FederatedAveragingOptimizer(object):
 		new_weights = dmlresult_obj.results.get('weights')
 		self._update_weights(new_weights)
 		if self.job.job_type == JobTypes.JOB_TRAIN.name:
-			return ActionableEventTypes.SCHEDULE_JOB.name, [self.job]
+			return ActionableEventTypes.SCHEDULE_JOBS.name, [self.job]
 		else:
 			self.job.job_type = JobTypes.JOB_TRAIN.name
-			return ActionableEventTypes.NOTHING.name, self.job
+			return ActionableEventTypes.NOTHING.name, None
 
 	def _done_transform_and_split(self, dmlresult_obj):
 		"""
@@ -151,10 +149,10 @@ class FederatedAveragingOptimizer(object):
 		self.job.session_filepath = dmlresult_obj.results['session_filepath']
 		self.job.datapoint_count = dmlresult_obj.results['datapoint_count']
 		if self.job.job_type == JobTypes.JOB_TRAIN.name:
-			return ActionableEventTypes.SCHEDULE_JOB.name, [self.job]
+			return ActionableEventTypes.SCHEDULE_JOBS.name, [self.job]
 		else:
 			self.job.job_type = JobTypes.JOB_TRAIN.name
-			return ActionableEventTypes.NOTHING.name, self.job
+			return ActionableEventTypes.NOTHING.name, None
 
 	def _done_training(self, dmlresult_obj):
 		"""
@@ -168,7 +166,7 @@ class FederatedAveragingOptimizer(object):
 		new_weights = dmlresult_obj.results.get('weights')
 		self._update_weights(new_weights)
 		self.job.job_type = JobTypes.JOB_COMM.name
-		return ActionableEventTypes.SCHEDULE_JOB.name, [self.job]
+		return ActionableEventTypes.SCHEDULE_JOBS.name, [self.job]
 
 	def _done_averaging(self, dmlresult_obj):
 		new_weights = dmlresult_obj.results.get('weights')
@@ -177,12 +175,12 @@ class FederatedAveragingOptimizer(object):
 		if self.listen_iterations >= self.listen_bound:
 			self.job.job_type = JobTypes.JOB_TRAIN.name
 			self.listen_iterations = 0
-			return ActionableEventTypes.SCHEDULE_JOB.name, [self.job]
+			return ActionableEventTypes.SCHEDULE_JOBS.name, [self.job]
 		else:
-			return ActionableEventTypes.NOTHING.name, self.job
+			return ActionableEventTypes.NOTHING.name, None
 
 	def _done_communicating(self, dmlresult_obj):
-		return ActionableEventTypes.NOTHING.name, self.job
+		return ActionableEventTypes.NOTHING.name, None
 
 	# Handlers for new information from the gateway
 	# TODO: This will come with the Gateway PR.
@@ -209,7 +207,7 @@ class FederatedAveragingOptimizer(object):
 		"""
 		self.job.job_type = JobTypes.JOB_AVG.name
 		self.job.set_weights(self.job.weights, payload["content"]["weights"], 1, 1)
-		return ActionableEventTypes.SCHEDULE_JOB.name, [self.job]
+		return ActionableEventTypes.SCHEDULE_JOBS.name, [self.job]
 
 	# def _received_termination(self, payload):
 	# 	"""

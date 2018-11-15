@@ -29,7 +29,7 @@ def make_initialize_job(model_json, raw_filepath=None):
     return initialize_job
 
 def make_transform_split_job( \
-    model_json, raw_filepath, transform_function = lambda x: x):
+    model_json, raw_filepath):
     transform_split_job = DMLJob(
         JobTypes.JOB_TRANSFORM_SPLIT.name,
         model_json,
@@ -37,7 +37,6 @@ def make_transform_split_job( \
         hyperparams=make_hyperparams(),
         label_column_name='label',
         raw_filepath=raw_filepath,
-        transform_function=transform_function
     )
     return transform_split_job
 

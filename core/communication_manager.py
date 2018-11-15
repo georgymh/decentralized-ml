@@ -36,7 +36,7 @@ class CommunicationManager(object):
         # the Communication Manager error-handle out of order/missed messages.
         self.EVENT_TYPE_2_CALLBACK = {
             RawEventTypes.NEW_SESSION.name: self._create_session,
-            ActionableEventTypes.SCHEDULE_JOB.name: self._schedule_job,
+            ActionableEventTypes.SCHEDULE_JOBS.name: self._schedule_job,
             ActionableEventTypes.TERMINATE.name: self._terminate_session,
             ActionableEventTypes.NOTHING.name: self._do_nothing,
         }

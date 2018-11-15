@@ -76,7 +76,7 @@ class ActionableEventTypes(Enum):
         NOTHING: Do nothing; received when new weights were sent to the Optimizer
         or a Communication Job was successfuly received.
     """
-    SCHEDULE_JOB = "SCHEDULE_JOB"
+    SCHEDULE_JOBS = "SCHEDULE_JOB"
     TERMINATE = "TERMINATE"
     NOTHING = "NOTHING"
 

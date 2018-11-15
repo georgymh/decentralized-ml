@@ -24,10 +24,6 @@ def config_manager():
     return config_manager
 
 @pytest.fixture
-def sample_transform_function():
-    return lambda x: x.drop_duplicates()
-
-@pytest.fixture
 def mnist_filepath():
     return 'tests/artifacts/runner_scheduler/mnist'
 
@@ -47,13 +43,12 @@ def test_dmlrunner_initialize_job_returns_list_of_nparray(config_manager):
     assert type(initial_weights[0]) == np.ndarray
 
 def test_dmlrunner_transform_and_split( \
-        config_manager, small_filepath, sample_transform_function):
+        config_manager, small_filepath):
     model_json = make_model_json()
     runner = DMLRunner(config_manager)
     transform_split_job = make_transform_split_job(
                             model_json, 
-                            small_filepath, 
-                            sample_transform_function
+                            small_filepath
                         )
     transform_split_job.hyperparams['split'] = 0.75
     job_results = runner.run_job(transform_split_job)
@@ -66,9 +61,7 @@ def test_dmlrunner_transform_and_split( \
         "Training and test set not created!"
     train = pd.read_csv(train_filepath)
     test = pd.read_csv(test_filepath)
-    assert len(train) + len(test) == 4, \
-        "Transform function was not applied correctly."
-    assert len(train) == 3 and len(test) == 1, \
+    assert len(train) == 6 and len(test) == 2, \
         "Train test split was not performed correctly."
 
     # Clean up
