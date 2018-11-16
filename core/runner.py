@@ -48,7 +48,7 @@ class DMLRunner(object):
             JobTypes.JOB_TRAIN.name: self._train,
             JobTypes.JOB_INIT.name: self._initialize,
             JobTypes.JOB_VAL.name: self._validate,
-            JobTypes.JOB_TRANSFORM_SPLIT.name: self._transform_and_split_data,
+            JobTypes.JOB_SPLIT.name: self._split_data,
             JobTypes.JOB_AVG.name: self._average,
             JobTypes.JOB_COMM.name: self._communicate
         }
@@ -244,18 +244,17 @@ class DMLRunner(object):
                 )
         return results
 
-    def _transform_and_split_data(self, job):
+    def _split_data(self, job):
         """
         Takes in a job, which should have the raw filepath assigned.
 
         1. In each folder, aggregate all data.
         2. Create session folder in transformed folder, along with data folders
            in session folder.
-        3. Transform data in each raw data folder.
-        4. Shuffle each transformed data and perform train-test split on each. 
-        5. Put each training and test set in corresponding data folders in 
+        3. Shuffle each transformed data and perform train-test split on each. 
+        4. Put each training and test set in corresponding data folders in 
            session folder.
-        6. Update session filepath in job.
+        5. Update session filepath in job.
         """
 
         # 1. Extracts all of the raw data from raw data filepath

@@ -108,9 +108,9 @@ class CommunicationManager(object):
         """
         if not self.scheduler:
             raise Exception("Communication Manager needs to be configured first!")
-        for dmljob_obj in dmljob_obj_arr:
+        for i, dmljob_obj in enumerate(dmljob_obj_arr):
             assert isinstance(dmljob_obj, DMLJob), \
-                "Is not DMLJob, is {}".format(type(dmljob_obj))
+                "Obj {} is not DMLJob, is {}".format(i, type(dmljob_obj))
             self.scheduler.add_job(dmljob_obj)
 
     def _terminate_session(self, payload):

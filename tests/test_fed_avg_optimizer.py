@@ -5,7 +5,7 @@ import numpy as np
 
 from tests.testing_utils import make_initialize_job, make_train_job
 from tests.testing_utils import make_serialized_job, make_model_json
-from tests.testing_utils import make_hyperparams, make_transform_split_job
+from tests.testing_utils import make_hyperparams, make_split_job
 from core.utils.enums import JobTypes, RawEventTypes, ActionableEventTypes
 from core.fed_avg_optimizer import FederatedAveragingOptimizer
 from core.runner import DMLRunner
@@ -43,24 +43,23 @@ def init_dmlresult_obj(config_manager, small_filepath):
     return result
 
 @pytest.fixture
-def transform_dmlresult_obj(config_manager, mnist_filepath):
+def split_dmlresult_obj(config_manager, mnist_filepath):
     model_json = make_model_json()
     runner = DMLRunner(config_manager)
-    transform_split_job = make_transform_split_job(
+    split_job = make_split_job(
                             model_json, 
                             mnist_filepath,
                         )
-    transform_split_job.hyperparams['split'] = 0.75
-    job_results = runner.run_job(transform_split_job)
+    split_job.hyperparams['split'] = 0.75
+    job_results = runner.run_job(split_job)
     return job_results
 
 @pytest.fixture
-def train_dmlresult_obj(config_manager, transform_dmlresult_obj, init_dmlresult_obj, small_filepath):
+def train_dmlresult_obj(config_manager, split_dmlresult_obj, init_dmlresult_obj, small_filepath):
     runner = DMLRunner(config_manager)
-    initialize_job = make_initialize_job(make_model_json(), small_filepath)
     initial_weights = init_dmlresult_obj.results['weights']
-    session_filepath = transform_dmlresult_obj.results['session_filepath']
-    datapoint_count = transform_dmlresult_obj.results['datapoint_count']
+    session_filepath = split_dmlresult_obj.results['session_filepath']
+    datapoint_count = split_dmlresult_obj.results['datapoint_count']
     train_job = make_train_job(
                     make_model_json(), 
                     initial_weights, 
@@ -87,16 +86,16 @@ def test_optimizer_can_kickoff(initialization_payload):
     event_type, job_arr = optimizer.kickoff()
     assert event_type == ActionableEventTypes.SCHEDULE_JOBS.name
     for job in job_arr:
-        assert job.job_type == JobTypes.JOB_INIT.name or job.job_type == JobTypes.JOB_TRANSFORM_SPLIT.name
+        assert job.job_type == JobTypes.JOB_INIT.name or job.job_type == JobTypes.JOB_SPLIT.name
 
 
-def test_optimizer_schedules_training_after_initialization(initialization_payload, init_dmlresult_obj, transform_dmlresult_obj):
+def test_optimizer_schedules_training_after_initialization(initialization_payload, init_dmlresult_obj, split_dmlresult_obj):
     optimizer = FederatedAveragingOptimizer(initialization_payload)
     event_type, job_arr = optimizer.ask(RawEventTypes.JOB_DONE.name, init_dmlresult_obj)
     initial_weights = init_dmlresult_obj.results['weights']
     assert all(np.allclose(arr1, arr2) for arr1,arr2 in zip(optimizer.job.weights, initial_weights))    
     assert event_type == ActionableEventTypes.NOTHING.name
-    event_type, job_arr = optimizer.ask(RawEventTypes.JOB_DONE.name, transform_dmlresult_obj)
+    event_type, job_arr = optimizer.ask(RawEventTypes.JOB_DONE.name, split_dmlresult_obj)
     assert event_type == ActionableEventTypes.SCHEDULE_JOBS.name
     for job in job_arr:
         assert job.job_type == JobTypes.JOB_TRAIN.name

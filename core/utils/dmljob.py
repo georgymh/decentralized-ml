@@ -1,3 +1,4 @@
+from copy import deepcopy
 import numpy as np
 
 from core.utils.keras import serialize_weights, deserialize_weights
@@ -44,9 +45,6 @@ class DMLJob(object):
                                     the raw data after applying the transform
                                     function and training-test split. Assumes
                                     `train.csv` and `test.csv` are in folder.
-            transform_function (function): Function to be applied on raw data.
-                                           Should take DataFrame on input and
-                                           return a DataFrame.
             datapoint_count (int): Number of datapoints after applying
                                    transform function.
 
@@ -70,6 +68,11 @@ class DMLJob(object):
         self.new_weights = new_weights
         self.omega = omega
         self.sigma_omega = sigma_omega
+
+    def copy_constructor(self, job_type):
+        newjob = deepcopy(self)
+        newjob.job_type = job_type
+        return newjob
 
 def serialize_job(dmljob_obj):
     """

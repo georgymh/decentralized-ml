@@ -94,7 +94,7 @@ def test_communication_manager_can_initialize_and_train_model(mnist_filepath):
     )
 
     assert communication_manager.optimizer.job.job_type == JobTypes.JOB_INIT.name or \
-        communication_manager.optimizer.job.job_type == JobTypes.JOB_TRANSFORM_SPLIT.name, \
+        communication_manager.optimizer.job.job_type == JobTypes.JOB_SPLIT.name, \
         "Should be ready to init or transform_split!"
     timeout = time.time() + 3
     while time.time() < timeout and len(scheduler.processed) == 0:
@@ -250,7 +250,6 @@ def test_communication_manager_can_inform_new_job_to_the_optimizer():
     )
     optimizer_job = communication_manager.optimizer.job
     assert optimizer_job.weights == true_job.weights
-    # assert optimizer_job.job_type == true_job.job_type
     assert optimizer_job.serialized_model == true_job.serialized_model
     assert optimizer_job.framework_type == true_job.framework_type
     assert optimizer_job.hyperparams == true_job.hyperparams

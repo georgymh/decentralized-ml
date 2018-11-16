@@ -19,13 +19,16 @@ class JobTypes(Enum):
 
         JOB_COMM: Push the weights onto IPFS and then communicate this update
         to rest of the nodes via blockchain.
+
+        JOB_SPLIT: Split the data and put it into new folders.
+        #TODO: Implement transformation of the data
     """
     JOB_TRAIN = "TRAIN"
     JOB_VAL = "VALIDATE"
     JOB_INIT = "INITIALIZE"
     JOB_AVG = "AVERAGE"
     JOB_COMM = "COMMUNICATE"
-    JOB_TRANSFORM_SPLIT = "TRANSFORM_SPLIT"
+    JOB_SPLIT = "SPLIT"
 
 class MessageEventTypes(Enum):
     """

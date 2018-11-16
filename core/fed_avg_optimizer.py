@@ -63,7 +63,7 @@ class FederatedAveragingOptimizer(object):
 			JobTypes.JOB_INIT.name: self._done_initializing,
 			JobTypes.JOB_AVG.name: self._done_averaging,
 			JobTypes.JOB_COMM.name: self._done_communicating,
-			JobTypes.JOB_TRANSFORM_SPLIT.name: self._done_transform_and_split,
+			JobTypes.JOB_SPLIT.name: self._done_split,
 		}
 		self.LEVEL_2_INFO_CALLBACKS = {
 			MessageEventTypes.NEW_WEIGHTS.name: self._received_new_weights,
@@ -79,29 +79,9 @@ class FederatedAveragingOptimizer(object):
 		randomly initializes the model.
 		"""
 		job_arr = []
-		job_one = DMLJob(
-			job_type=JobTypes.JOB_INIT.name,
-			serialized_model=self.job.serialized_model,
-			framework_type=self.job.framework_type,
-			weights=self.job.weights,
-			hyperparams=self.job.hyperparams,
-			label_column_name=self.job.label_column_name,
-			raw_filepath=self.job.raw_filepath,
-			session_filepath=self.job.session_filepath,
-			datapoint_count=self.job.datapoint_count
-		)
+		job_one = self.job.copy_constructor(JobTypes.JOB_INIT.name)
 		job_arr.append(job_one)
-		job_two = DMLJob(
-			job_type=JobTypes.JOB_TRANSFORM_SPLIT.name,
-			serialized_model=self.job.serialized_model,
-			framework_type=self.job.framework_type,
-			weights=self.job.weights,
-			hyperparams=self.job.hyperparams,
-			label_column_name=self.job.label_column_name,
-			raw_filepath=self.job.raw_filepath,
-			session_filepath=self.job.session_filepath,
-			datapoint_count=self.job.datapoint_count
-		)
+		job_two = self.job.copy_constructor(JobTypes.JOB_SPLIT.name)
 		job_arr.append(job_two)
 		return ActionableEventTypes.SCHEDULE_JOBS.name, job_arr
 
@@ -140,9 +120,9 @@ class FederatedAveragingOptimizer(object):
 			self.job.job_type = JobTypes.JOB_TRAIN.name
 			return ActionableEventTypes.NOTHING.name, None
 
-	def _done_transform_and_split(self, dmlresult_obj):
+	def _done_split(self, dmlresult_obj):
 		"""
-		"LEVEL 2" Callback for a transform and split job that just finished.
+		"LEVEL 2" Callback for a split job that just finished.
 		Returns a DML Job of type train unless initialization is not yet done
 		and modifies the current state of the job.
 		"""

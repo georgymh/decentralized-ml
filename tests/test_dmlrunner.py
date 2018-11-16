@@ -12,7 +12,7 @@ from core.utils.keras           import serialize_weights, deserialize_weights
 from core.utils.enums           import JobTypes
 from tests.testing_utils        import make_initialize_job, make_model_json
 from tests.testing_utils        import make_train_job, make_validate_job, make_hyperparams
-from tests.testing_utils        import make_transform_split_job
+from tests.testing_utils        import make_split_job
  
 
 @pytest.fixture
@@ -46,12 +46,12 @@ def test_dmlrunner_transform_and_split( \
         config_manager, small_filepath):
     model_json = make_model_json()
     runner = DMLRunner(config_manager)
-    transform_split_job = make_transform_split_job(
+    split_job = make_split_job(
                             model_json, 
                             small_filepath
                         )
-    transform_split_job.hyperparams['split'] = 0.75
-    job_results = runner.run_job(transform_split_job)
+    split_job.hyperparams['split'] = 0.75
+    job_results = runner.run_job(split_job)
     session_filepath = job_results.results['session_filepath']
     assert os.path.isdir(session_filepath), \
         "Session folder does not exist!"
@@ -75,11 +75,11 @@ def test_dmlrunner_train_job_returns_weights_omega_and_stats( \
     runner = DMLRunner(config_manager)
     initialize_job = make_initialize_job(model_json)
     initial_weights = runner.run_job(initialize_job).results['weights']
-    transform_split_job = make_transform_split_job(
+    split_job = make_split_job(
                             model_json, 
                             mnist_filepath
                         )
-    job_results = runner.run_job(transform_split_job)
+    job_results = runner.run_job(split_job)
     session_filepath = job_results.results['session_filepath']
     datapoint_count = job_results.results['datapoint_count']
     train_job = make_train_job(
@@ -111,11 +111,11 @@ def test_dmlrunner_same_train_job_with_split_1( \
     runner = DMLRunner(config_manager)
     initialize_job = make_initialize_job(model_json)
     initial_weights = runner.run_job(initialize_job).results['weights']
-    transform_split_job = make_transform_split_job(
+    split_job = make_split_job(
                             model_json, 
                             mnist_filepath
                         )
-    job_results = runner.run_job(transform_split_job)
+    job_results = runner.run_job(split_job)
     session_filepath = job_results.results['session_filepath']
     datapoint_count = job_results.results['datapoint_count']
     train_job = make_train_job(
@@ -149,11 +149,11 @@ def test_dmlrunner_validate_job_returns_stats( \
     runner = DMLRunner(config_manager)
     initialize_job = make_initialize_job(make_model_json())
     initial_weights = runner.run_job(initialize_job).results['weights']
-    transform_split_job = make_transform_split_job(
+    split_job = make_split_job(
                             model_json, 
                             mnist_filepath
                         )
-    job_results = runner.run_job(transform_split_job)
+    job_results = runner.run_job(split_job)
     session_filepath = job_results.results['session_filepath']
     datapoint_count = job_results.results['datapoint_count']
     train_job = make_train_job(

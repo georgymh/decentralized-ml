@@ -8,7 +8,7 @@ import numpy as np
 
 from core.scheduler             import DMLScheduler
 from core.configuration         import ConfigurationManager
-from tests.testing_utils        import make_initialize_job, make_model_json, make_transform_split_job
+from tests.testing_utils        import make_initialize_job, make_model_json, make_split_job
 
 
 config_manager = ConfigurationManager()
@@ -94,12 +94,3 @@ def test_dmlscheduler_cron():
         initial_weights = output.results['weights']
         assert type(initial_weights) == list
         assert type(initial_weights[0]) == np.ndarray
-
-# def test_dmlscheduler_cannot_schedule_transform_and_split_jobs(mnist_filepath):
-#     """
-#     This is a bug.
-#     """
-#     scheduler.reset()
-#     transform_and_split_job = make_transform_split_job(make_model_json(), mnist_filepath)
-#     scheduler.add_job(transform_and_split_job)
-#     scheduler.runners_run_next_jobs()
