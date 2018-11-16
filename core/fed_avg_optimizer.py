@@ -54,6 +54,7 @@ class FederatedAveragingOptimizer(object):
 		optimizer_params = initialization_payload.get('optimizer_params')
 		self.listen_iterations = optimizer_params.get('listen_iterations', 0)
 		self.listen_bound = optimizer_params.get('listen_bound', 2)
+		self.initialization_complete = False
 		self.LEVEL1_CALLBACKS = {
 			RawEventTypes.JOB_DONE.name: self._handle_job_done,
 			RawEventTypes.NEW_INFO.name: self._handle_new_info,
@@ -114,10 +115,11 @@ class FederatedAveragingOptimizer(object):
 		"""
 		new_weights = dmlresult_obj.results.get('weights')
 		self._update_weights(new_weights)
-		if self.job.job_type == JobTypes.JOB_TRAIN.name:
+		if self.initialization_complete:
 			return ActionableEventTypes.SCHEDULE_JOBS.name, [self.job]
 		else:
 			self.job.job_type = JobTypes.JOB_TRAIN.name
+			self.initialization_complete = True
 			return ActionableEventTypes.NOTHING.name, None
 
 	def _done_split(self, dmlresult_obj):
@@ -128,10 +130,11 @@ class FederatedAveragingOptimizer(object):
 		"""
 		self.job.session_filepath = dmlresult_obj.results['session_filepath']
 		self.job.datapoint_count = dmlresult_obj.results['datapoint_count']
-		if self.job.job_type == JobTypes.JOB_TRAIN.name:
+		if self.initialization_complete:
 			return ActionableEventTypes.SCHEDULE_JOBS.name, [self.job]
 		else:
 			self.job.job_type = JobTypes.JOB_TRAIN.name
+			self.initialization_complete = True
 			return ActionableEventTypes.NOTHING.name, None
 
 	def _done_training(self, dmlresult_obj):
