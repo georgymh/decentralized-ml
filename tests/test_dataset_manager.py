@@ -79,14 +79,14 @@ def check_mappings_exist(dataset_manager):
     """
     assert dataset_manager.get_mappings()
     mapping_filepath = os.path.join(
-        dataset_manager.raw_filepath, 
+        dataset_manager._raw_filepath, 
         'datasets.yml'
     )
     assert os.path.isfile(mapping_filepath)
 
 def check_mappings_correctness(dataset_manager):
     """
-    Ensure that the values of the mappings are the folders in raw_filepath
+    Ensure that the values of the mappings are the folders in _raw_filepath
     """
     mappings = dataset_manager.get_mappings()
     folders = list(mappings.values())
@@ -99,7 +99,7 @@ def clean_up(dataset_manager):
     Remove datasets.yml, if it exists.
     """
     mapping_filepath = os.path.join(
-        dataset_manager.raw_filepath, 
+        dataset_manager._raw_filepath, 
         'datasets.yml'
     )
     if os.path.isfile(mapping_filepath):
