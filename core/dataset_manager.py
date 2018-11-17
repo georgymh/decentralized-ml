@@ -54,15 +54,15 @@ class DatasetManager():
         config = config_manager.get_config()
         raw_filepath = config['GENERAL']['dataset_path']
         assert os.path.isdir(raw_filepath), "The dataset filepath provided is not valid."
-        self.raw_filepath = raw_filepath
+        self._raw_filepath = raw_filepath
         self._mappings = None
         self._validate_data()
-        self.host = config.get("BLOCKCHAIN", "host")
-        self.ipfs_port = config.getint("BLOCKCHAIN", "ipfs_port")
-        self.port = config.getint("BLOCKCHAIN", "http_port")
-        self.timeout = config.getint("BLOCKCHAIN", "timeout")
+        self._host = config.get("BLOCKCHAIN", "host")
+        self._ipfs_port = config.getint("BLOCKCHAIN", "ipfs_port")
+        self._port = config.getint("BLOCKCHAIN", "http_port")
+        self._timeout = config.getint("BLOCKCHAIN", "timeout")
         try:
-            self.client = ipfsapi.connect(self.host, self.ipfs_port)
+            self.client = ipfsapi.connect(self._host, self._ipfs_port)
         except Exception as e:
             logging.info("IPFS daemon not started, got: {0}".format(e))
             raise(e)
@@ -82,8 +82,8 @@ class DatasetManager():
                           "message from pandas for more information: {message}")
         header_message = ("No header has been provided in file {file} in "
                           "folder {folder}")
-        for folder in os.listdir(self.raw_filepath):
-            folder_path = os.path.join(os.path.abspath(self.raw_filepath), folder)
+        for folder in os.listdir(self._raw_filepath):
+            folder_path = os.path.join(os.path.abspath(self._raw_filepath), folder)
             if not os.path.isdir(folder_path): continue
             files = os.listdir(folder_path)
             for file in files:
@@ -118,13 +118,13 @@ class DatasetManager():
 
     def bootstrap(self):
         """
-        Check if datasets.yml exists. If so, load it into the class (if it
+        Check if datasets.yaml exists. If so, load it into the class (if it
         hasn't been already). Otherwise, call _create_dataset_mappings
 
         Returns True if mappings had to be created, and False otherwise 
         (used for testing).
         """
-        mapping_filepath = os.path.join(self.raw_filepath, "datasets.yml")
+        mapping_filepath = os.path.join(self._raw_filepath, "datasets.yaml")
         if os.path.isfile(mapping_filepath):
             if not self._mappings:
                 with open(mapping_filepath, "r") as f:
@@ -136,8 +136,8 @@ class DatasetManager():
         
     def _create_dataset_mappings(self, mapping_filepath):
         """
-        mapping_filepath is the filepath where datasets.yml is created, which
-        is <raw_filepath>/datasets.yml.
+        mapping_filepath is the filepath where datasets.yaml is created, which
+        is <raw_filepath>/datasets.yaml.
 
         For each dataset folder in the raw_filepath, generate a random string
         using uuid and add a (key, value) pair to a dictionary such that the 
@@ -147,7 +147,7 @@ class DatasetManager():
         Ultimately, we are assigning identifiers for each dataset.
         """
         mappings = {}
-        for folder in os.listdir(self.raw_filepath):
+        for folder in os.listdir(self._raw_filepath):
             encoding = str(uuid.uuid4())
             mappings[encoding] = folder
         self._mappings = mappings
@@ -168,7 +168,7 @@ class DatasetManager():
 
         IMPORTANT: NOT FINISHED DEBUGGING, DO NOT USE
         """
-        filepath = self.raw_filepath
+        filepath = self._raw_filepath
         self.check_key_length(name)
         value = {}
         folders = []
@@ -201,7 +201,7 @@ class DatasetManager():
 
         IMPORTANT: NOT FINISHED DEBUGGING, DO NOT USE
         """
-        filepath = self.raw_filepath
+        filepath = self._raw_filepath
         self.check_key_length(name)
         value = {}
         folders = []
