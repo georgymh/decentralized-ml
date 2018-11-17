@@ -61,11 +61,11 @@ class DatasetManager():
         self._ipfs_port = config.getint("BLOCKCHAIN", "ipfs_port")
         self._port = config.getint("BLOCKCHAIN", "http_port")
         self._timeout = config.getint("BLOCKCHAIN", "timeout")
-        try:
-            self.client = ipfsapi.connect(self._host, self._ipfs_port)
-        except Exception as e:
-            logging.info("IPFS daemon not started, got: {0}".format(e))
-            raise(e)
+        # try:
+        #     self.client = ipfsapi.connect(self._host, self._ipfs_port)
+        # except Exception as e:
+        #     logging.info("IPFS daemon not started, got: {0}".format(e))
+        #     raise(e)
 
     def _validate_data(self):
         """

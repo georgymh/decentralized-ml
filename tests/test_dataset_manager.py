@@ -80,7 +80,7 @@ def check_mappings_exist(dataset_manager):
     assert dataset_manager.get_mappings()
     mapping_filepath = os.path.join(
         dataset_manager._raw_filepath, 
-        'datasets.yml'
+        'datasets.yaml'
     )
     assert os.path.isfile(mapping_filepath)
 
@@ -96,18 +96,18 @@ def check_mappings_correctness(dataset_manager):
 
 def clean_up(dataset_manager):
     """
-    Remove datasets.yml, if it exists.
+    Remove datasets.yaml, if it exists.
     """
     mapping_filepath = os.path.join(
         dataset_manager._raw_filepath, 
-        'datasets.yml'
+        'datasets.yaml'
     )
     if os.path.isfile(mapping_filepath):
         os.remove(mapping_filepath)
 
 def test_complete_yaml_creation(good_dataset_manager):
     """
-    Verify datasets.yml (dataset mappings) is created and correct.
+    Verify datasets.yaml (dataset mappings) is created and correct.
     """
     good_dataset_manager.bootstrap()
     check_mappings_exist(good_dataset_manager)
