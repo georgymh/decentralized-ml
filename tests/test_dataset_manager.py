@@ -123,9 +123,6 @@ def test_no_yaml_creation_repeat(good_dataset_manager):
     """
     good_dataset_manager.bootstrap()
     check_mappings_exist(good_dataset_manager)
-
-    good_dataset_manager._mappings = None
-    
     assert not good_dataset_manager.bootstrap()
     
     clean_up(good_dataset_manager)
