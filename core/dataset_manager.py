@@ -148,7 +148,7 @@ class DatasetManager():
         """
         mappings = {}
         for folder in os.listdir(self.raw_filepath):
-            encoding = uuid.uuid4()
+            encoding = str(uuid.uuid4())
             mappings[encoding] = folder
         self._mappings = mappings
         with open(mapping_filepath, "w") as f:
