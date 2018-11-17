@@ -61,11 +61,11 @@ class DatasetManager():
         self.ipfs_port = config.getint("BLOCKCHAIN", "ipfs_port")
         self.port = config.getint("BLOCKCHAIN", "http_port")
         self.timeout = config.getint("BLOCKCHAIN", "timeout")
-        # try:
-        #     self.client = ipfsapi.connect(self.host, self.ipfs_port)
-        # except Exception as e:
-        #     logging.info("IPFS daemon not started, got: {0}".format(e))
-        #     raise(e)
+        try:
+            self.client = ipfsapi.connect(self.host, self.ipfs_port)
+        except Exception as e:
+            logging.info("IPFS daemon not started, got: {0}".format(e))
+            raise(e)
 
     def _validate_data(self):
         """
@@ -118,23 +118,21 @@ class DatasetManager():
 
     def bootstrap(self):
         """
-        Do nothing if mappings instance already exists. Otherwise, check if
-        datasets.yml exists in raw_filepath. If not, call 
-        _create_dataset_mappings. Then load the mappings instance from 
-        datasets.yml.
+        Check if datasets.yml exists. If so, load it into the class (if it
+        hasn't been already). Otherwise, call _create_dataset_mappings
 
-        Returns True if the mappings had to be loaded in, False otherwise
+        Returns True if mappings had to be created, and False otherwise 
         (used for testing).
         """
-        if self._mappings:
-            return False
         mapping_filepath = os.path.join(self.raw_filepath, "datasets.yml")
         if os.path.isfile(mapping_filepath):
-            with open(mapping_filepath, "r") as f:
-                self._mappings = yaml.load(f.readlines())
+            if not self._mappings:
+                with open(mapping_filepath, "r") as f:
+                    self._mappings = yaml.load(f.readlines())
+            return False
         else:
             self._create_dataset_mappings(mapping_filepath)
-        return True
+            return True
         
     def _create_dataset_mappings(self, mapping_filepath):
         """
@@ -142,9 +140,11 @@ class DatasetManager():
         is <raw_filepath>/datasets.yml.
 
         For each dataset folder in the raw_filepath, generate a random string
-        using uuid and create a (key, value) such that the random string is
-        key and the dataset folder name is the value. Store the mappings in
-        a dictionary called _mappings and a yaml file at mapping_filepath.
+        using uuid and add a (key, value) pair to a dictionary such that the 
+        random string is key and the dataset folder name is the value. Store
+        the dictionary in _mappings and in a yaml file at mapping_filepath.
+
+        Ultimately, we are assigning identifiers for each dataset.
         """
         mappings = {}
         for folder in os.listdir(self.raw_filepath):
