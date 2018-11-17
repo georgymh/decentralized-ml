@@ -128,7 +128,7 @@ class DatasetManager():
         if os.path.isfile(mapping_filepath):
             if not self._mappings:
                 with open(mapping_filepath, "r") as f:
-                    self._mappings = yaml.load(f.readlines())
+                    self._mappings = yaml.load(f)
             return False
         else:
             self._create_dataset_mappings(mapping_filepath)
