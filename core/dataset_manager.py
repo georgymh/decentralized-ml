@@ -5,6 +5,7 @@ import string
 import random
 import os
 import yaml
+import uuid
 
 import numpy as np
 import pandas as pd
@@ -54,17 +55,17 @@ class DatasetManager():
         raw_filepath = config['GENERAL']['dataset_path']
         assert os.path.isdir(raw_filepath), "The dataset filepath provided is not valid."
         self.raw_filepath = raw_filepath
-        self.mappings = None
+        self._mappings = None
         self._validate_data()
         self.host = config.get("BLOCKCHAIN", "host")
         self.ipfs_port = config.getint("BLOCKCHAIN", "ipfs_port")
         self.port = config.getint("BLOCKCHAIN", "http_port")
         self.timeout = config.getint("BLOCKCHAIN", "timeout")
-        try:
-            self.client = ipfsapi.connect(self.host, self.ipfs_port)
-        except Exception as e:
-            logging.info("IPFS daemon not started, got: {0}".format(e))
-            raise(e)
+        # try:
+        #     self.client = ipfsapi.connect(self.host, self.ipfs_port)
+        # except Exception as e:
+        #     logging.info("IPFS daemon not started, got: {0}".format(e))
+        #     raise(e)
 
     def _validate_data(self):
         """
@@ -107,24 +108,51 @@ class DatasetManager():
                         folder=folder
                     )
 
-    def bootstrap(self, mapping_filepath="core/datasets.yaml"):
-        if self.mappings:
+    def get_mappings(self):
+        """
+        Returns the dataset mappings.
+        """
+        if not self._mappings:
+            raise Exception("Dataset Manager needs to be bootstrapped first.")
+        return self._mappings
+
+    def bootstrap(self):
+        """
+        Do nothing if mappings instance already exists. Otherwise, check if
+        datasets.yml exists in raw_filepath. If not, call 
+        _create_dataset_mappings. Then load the mappings instance from 
+        datasets.yml.
+
+        Returns True if the mappings had to be loaded in, False otherwise
+        (used for testing).
+        """
+        if self._mappings:
             return False
+        mapping_filepath = os.path.join(self.raw_filepath, "datasets.yml")
         if os.path.isfile(mapping_filepath):
             with open(mapping_filepath, "r") as f:
-                self.mappings = yaml.load(f.readlines())
+                self._mappings = yaml.load(f.readlines())
         else:
-            self.create_dataset_mappings(mapping_filepath)
+            self._create_dataset_mappings(mapping_filepath)
         return True
         
     def _create_dataset_mappings(self, mapping_filepath):
+        """
+        mapping_filepath is the filepath where datasets.yml is created, which
+        is <raw_filepath>/datasets.yml.
+
+        For each dataset folder in the raw_filepath, generate a random string
+        using uuid and create a (key, value) such that the random string is
+        key and the dataset folder name is the value. Store the mappings in
+        a dictionary called _mappings and a yaml file at mapping_filepath.
+        """
         mappings = {}
-        for folder in self.raw_filepath:
+        for folder in os.listdir(self.raw_filepath):
             encoding = uuid.uuid4()
             mappings[encoding] = folder
-        self.mappings = mappings
+        self._mappings = mappings
         with open(mapping_filepath, "w") as f:
-            f.write(yaml.dump(mapping))
+            f.write(yaml.dump(mappings))
 
     def check_key_length(self, key):
         """
