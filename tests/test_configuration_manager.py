@@ -1,9 +1,7 @@
-import tests.context
-
 import os
-
 import pytest
 
+import tests.context
 from core.configuration import ConfigurationManager
 
 @pytest.fixture

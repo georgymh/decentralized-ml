@@ -92,14 +92,11 @@ class ConfigurationManager(object):
         # For all secret sections, add secret_section_message as a comment.
         with open(config_filepath, "r") as f:
             lines = f.readlines()
-        stripped = [line.strip() for line in lines]
-        num_added_comments = 0
         for secret_section in secret_sections:
-            index = stripped.index("[{}]".format(secret_section))
-            lines.insert(index + num_added_comments, secret_section_message)
+            index = lines.index("[{}]\n".format(secret_section))
+            lines.insert(index, secret_section_message)
         with open(config_filepath, "w") as f:
             f.write("".join(lines))
-        stripped = [line.strip() for line in lines]
         self._config = config
 
 
