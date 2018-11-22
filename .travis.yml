@@ -19,7 +19,7 @@ install:
   - pushd . && cd $HOME/bin && tar -xzvf /tmp/ipfs.tar.gz && popd
   - export PATH="$HOME/bin/go-ipfs:$PATH"
   # install lotion
-  - npm i lotion@0.1.18
+  - npm i lotion@0.2.3
 before_script:
   - node ./dagora-chain/app_trivial.js &
   - ipfs init
