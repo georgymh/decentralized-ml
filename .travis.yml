@@ -21,8 +21,7 @@ install:
   # install lotion
   - npm i lotion@0.2.3
 before_script:
-  - ls ./dagora-chain/
-  - node ./dagora-chain/app.js &
+  - node ./dagora-chain/app.js
   - ipfs init
   - ipfs daemon &
   - sleep 10
