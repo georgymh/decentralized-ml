@@ -21,7 +21,7 @@ before_install:
   - ssh-add pk
   - git clone git@github.com:nzoghb/dagora-chain.git
   # use node
-  - nvm install node
+  - nvm install 8
   - nvm use node
   - npm -v
   - node -v
