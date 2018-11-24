@@ -21,10 +21,11 @@ install:
   # install lotion
   - npm i lotion@0.2.3
 before_script:
+  - ls ./dagora-chain/
   - node ./dagora-chain/app.js &
   - ipfs init
   - ipfs daemon &
-  - sleep 5
+  - sleep 10
 script:
   - curl http://localhost:3000/state
   - curl http://localhost:5001/api/v0/id
