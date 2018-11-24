@@ -19,12 +19,13 @@ install:
   - pushd . && cd $HOME/bin && tar -xzvf /tmp/ipfs.tar.gz && popd
   - export PATH="$HOME/bin/go-ipfs:$PATH"
   # install lotion
-  - npm i lotion@0.2.3
+  - npm i ./dagora-chain
 before_script:
-  - node ./dagora-chain/app.js
+  - cd ./dagora-chain
+  - node ./app.js &
   - ipfs init
   - ipfs daemon &
-  - sleep 10
+  - sleep 5
 script:
   - curl http://localhost:3000/state
   - curl http://localhost:5001/api/v0/id
