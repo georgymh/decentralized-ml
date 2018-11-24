@@ -4,15 +4,6 @@ python:
 cache:
   - pip
   - npm
-# node-specific requirements, see https://docs.travis-ci.com/user/languages/javascript-with-nodejs/#nodejs-v4-or-iojs-v3-compiler-requirements
-env:
-  - CXX=g++-4.8
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-    packages:
-      - g++-4.8
 before_install:
   # grab repo
   - openssl aes-256-cbc -K $encrypted_003878c977d9_key -iv $encrypted_003878c977d9_iv -in pk.enc -out pk -d
@@ -25,7 +16,6 @@ before_install:
   - nvm use node
   - npm -v
   - node -v
-  - npm install -g node-gyp
 install:
   - pip install -r requirements.txt
   # install IPFS
@@ -36,7 +26,7 @@ install:
   - cd ./dagora-chain
   - npm ci
 before_script:
-  - node ./app.js
+  - node ./app.js &
   - cd ..
   - ipfs init
   - ipfs daemon &
