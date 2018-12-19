@@ -72,7 +72,8 @@ def test_communication_manager_fails_if_not_configured(new_session_event):
         )
         raise Exception("This should have raised an exception")
     except Exception as e:
-        assert str(e) == "Communication Manager needs to be configured first!"
+        assert str(e) == "Dataset Manager has not been set. Communication \
+             Manager needs to be configured first!"
 
 def test_communication_manager_creates_new_sessions(dataset_manager, new_session_event, config_manager, ipfs_client):
     """

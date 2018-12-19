@@ -95,7 +95,8 @@ class CommunicationManager(object):
         # only considering the 'FederatedAveragingOptimizer' for now.
         # TODO: We need to incorporate session id's when we're ready.
         if not self.dataset_manager:
-            raise Exception("Dataset Manager needs to be configured first!")
+            raise Exception("Dataset Manager has not been set. Communication \
+             Manager needs to be configured first!")
         logging.info("New optimizer session is being set up...")
         initialization_payload = payload.get(TxEnum.CONTENT.name)
         self.optimizer = FederatedAveragingOptimizer(
@@ -116,7 +117,8 @@ class CommunicationManager(object):
         Helper function that schedules a DML Job through the Scheduler.
         """
         if not self.scheduler:
-            raise Exception("Communication Manager needs to be configured first!")
+            raise Exception("Scheduler has not been set. Communication \
+             Manager needs to be configured first!")
         for i, dmljob_obj in enumerate(dmljob_obj_arr):
             assert isinstance(dmljob_obj, DMLJob), \
                 "Obj {} is not DMLJob, is {}".format(i, type(dmljob_obj))
