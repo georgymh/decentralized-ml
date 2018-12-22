@@ -152,69 +152,49 @@ class DatasetManager():
         with open(mapping_filepath, "w") as f:
             f.write(yaml.dump(mappings))
 
-    def check_key_length(self, key):
-        """
-        Keys for datasets can only be at most 30 characters long.
-        """
-        if len(key) > 30:
-            raise InvalidKeyError(key)
+    def _generate_ed_directory(self):
+        ed_directory = {}
 
-    def post_dataset_with_md(self, name):
-        """
-        Post samples of datasets on blockchain along with provided metadata
-        under the provided name as the key
-
-        IMPORTANT: NOT FINISHED DEBUGGING, DO NOT USE
-        """
-        filepath = self._raw_filepath
-        self.check_key_length(name)
-        value = {}
-        folders = []
-        for file in os.listdir(filepath):
-            if os.path.isdir(os.path.join(os.path.abspath(filepath), file)):
-                folders.append(file)
-        for folder in folders:
-            folder_dict = {}
-            folder_path = os.path.join(os.path.abspath(filepath), folder)
-            files = os.listdir(folder_path)
-            for file in files:
-                if file[:2] == 'md':
-                    file_path = os.path.join(folder_path, file)
-                    metadata = pd.read_csv(file_path)
-                    folder_dict['md'] = metadata.to_json()
-                else:
-                    file_path = os.path.join(folder_path, file)
-                    dataset = pd.read_csv(file_path)
-                    sample = dataset.sample(frac=0.1)
-                    folder_dict['ds'] = sample.to_json()
-            if 'md' not in folder_dict:
-                raise NoMetadataFoundError(folder)
-            value[folder] = folder_dict
-        receipt = setter(client=self._client, key=name, value=value, port=self._port)
-
-    def post_dataset(self, name):
-        """
-        Post samples of datasets on blockchain with automatically generated
-        metadata under provided name as the key
-
-        IMPORTANT: NOT FINISHED DEBUGGING, DO NOT USE
-        """
-        filepath = self._raw_filepath
-        self.check_key_length(name)
-        value = {}
-        folders = []
-        for file in os.listdir(filepath):
-            if os.path.isdir(os.path.join(os.path.abspath(filepath), file)):
-                folders.append(file)
-        for folder in folders:
-            folder_dict = {}
-            folder_path = os.path.join(os.path.abspath(filepath), folder)
-            file = list(os.listdir(folder_path))[0]
-            file_path = os.path.join(folder_path, file)
-            dataset = pd.read_csv(file_path)
-            md = pd.DataFrame(dataset.describe())
+        for folder in os.listdir(self._raw_filepath):
+            folder_path = os.path.join(os.path.abspath(self._raw_filepath), folder)
+            if not os.path.isdir(folder_path): continue
+            files = list(os.listdir(folder_path))
+            assert len(files) == 1, \
+                "We only support one file per dataset folder!"
+            file_name = files[0]:
+            if not file_name.endswith(".csv"): continue
+            filepath = os.path.join(folder_path, file_name)
+            dataset = pd.read_csv(filepath)
             sample = dataset.sample(frac=0.1)
-            folder_dict['ds'] = sample.to_json()
-            folder_dict['md'] = md.to_json()
-            value[folder] = folder_dict
-        receipt = setter(client=self._client, key=name, value=value, port=self._port)
+            ed_directory[file[:-4]] = sample.to_json()
+        
+        return ed_directory
+
+    def post_dataset(self, key):
+        """
+        Post the ED Directory on blockchain with the given key.
+
+        The ED Directory is a JSON dictionary whose keys represent the dataset
+        folders in the directory and whose values represent the corresponding
+        datasets. Assume only one dataset file per folder. 
+
+        An example of an ED Directory can look like this:
+
+        {
+            ...
+            'dataset1' : <dataset1 sample json>,
+            'dataset2' : <dataset2 sample json>
+            ...
+        }
+        """
+        assert len(name) <= 30, \
+            "Keys for datasets can only be at most 30 characters long."
+
+        ed_directory = self._generate_ed_directory()
+        
+        receipt = setter(
+                    client=self._client, 
+                    key=key, 
+                    value=ed_directory, 
+                    port=self._port
+                )

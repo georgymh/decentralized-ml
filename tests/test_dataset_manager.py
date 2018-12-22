@@ -11,7 +11,7 @@ from core.configuration import ConfigurationManager
 from core.dataset_manager import DatasetManager
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def good_config_manager():
     config_manager = ConfigurationManager()
     config_manager.bootstrap(
@@ -19,11 +19,11 @@ def good_config_manager():
     )
     return config_manager
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def good_dataset_manager(good_config_manager):
     return DatasetManager(good_config_manager)
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def bad_config_manager_format():
     config_manager = ConfigurationManager()
     config_manager.bootstrap(
@@ -31,7 +31,7 @@ def bad_config_manager_format():
     )
     return config_manager
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def bad_config_manager_header():
     config_manager = ConfigurationManager()
     config_manager.bootstrap(
@@ -132,6 +132,19 @@ def test_no_yaml_creation_repeat(good_dataset_manager):
     
     clean_up(good_dataset_manager)
 
+def test_ed_directory_format(good_dataset_manager):
+    ed_directory = good_dataset_manager._generate_ed_directory()
+
+    assert type(ed_directory == dict), \
+        "ED Directory is not a dictionary!"
+
+    for folder, dataset in ed_directory.items():
+        assert folder in ('test1', 'test2'), \
+            "Key is not dataset folder name!"
+        
+        df = pd.read_json(dataset)
+        assert len(df) == 1, \
+            "Sample was not 10 percent of original data!"
 '''
 uncomment when node is running
 
