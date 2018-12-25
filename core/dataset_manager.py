@@ -168,8 +168,8 @@ class DatasetManager():
 
         {
             ...
-            <dataset1_uuid> : <dataset1 sample json>,
-            <dataset2_uuid> : <dataset2 sample json>
+            <dataset1_uuid> : (<dataset1 sample json>, <dataset1 metadata json>),
+            <dataset2_uuid> : (<dataset2 sample json>, <dataset2 metadata json>)
             ...
         }
         """
@@ -190,7 +190,8 @@ class DatasetManager():
             filepath = os.path.join(folder_path, file_name)
             dataset = pd.read_csv(filepath)
             sample = dataset.sample(frac=0.1)
-            ed_directory[encoding] = sample.to_json()
+            metadata = dataset.describe()
+            ed_directory[encoding] = (sample.to_json(), metadata.to_json())
         
         return ed_directory
 

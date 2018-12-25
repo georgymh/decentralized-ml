@@ -141,7 +141,8 @@ def test_ed_directory_format(good_dataset_manager):
     assert type(ed_directory == dict), \
         "ED Directory is not a dictionary!"
 
-    for encoding, dataset in ed_directory.items():
+    for encoding, data_tuple in ed_directory.items():
+        dataset = data_tuple[0]
         assert encoding in mappings.keys(), \
             "Key is not encoding in dataset mappings!"
         
