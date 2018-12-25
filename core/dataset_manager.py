@@ -50,20 +50,29 @@ class DatasetManager():
 
         TODO: In the event of a invalid dataset path, log a useful message 
         for the user and don't terminate the service
+
+        TODO: Labeler is hardcoded to give every ED Directory a label of
+        'category'. Update this labeler so that it properly labels ED
+        Directories. 
         """
         config = config_manager.get_config()
         raw_filepath = config['GENERAL']['dataset_path']
-        assert os.path.isdir(raw_filepath), "The dataset filepath provided is not valid."
+        assert os.path.isdir(raw_filepath), \
+            "The dataset filepath provided is not valid."
         self._raw_filepath = raw_filepath
         self._mappings = None
         self._validate_data()
         self._port = config.getint("BLOCKCHAIN", "http_port")
+        self._ipfs_client = None
+        self._db_client = None
+        self.label = config['DATASET_MANAGER']['category']
 
-    def configure(self, ipfs_client):
+    def configure(self, ipfs_client, db_client):
         """
         Sets up IPFS client for _communicate.
         """
-        self._client = ipfs_client
+        self._ipfs_client = ipfs_client
+        self._db_client = db_client
     
     def _validate_data(self):
         """
@@ -153,20 +162,36 @@ class DatasetManager():
             f.write(yaml.dump(mappings))
 
     def _generate_ed_directory(self):
+        """
+        This is a helper method that encompasses the logic for creating the
+        ED Directory. Given the directory example in the class docstring, 
+        an example of an ED Directory can look like this:
+
+        {
+            ...
+            <dataset1_uuid> : <dataset1 sample json>,
+            <dataset2_uuid> : <dataset2 sample json>
+            ...
+        }
+        """
         ed_directory = {}
+        mappings = self._mappings
+        filepath = os.path.join(self._raw_filepath, 'datasets.yaml')
+        reverse_mappings = {v: k for k, v in mappings.items()}
 
         for folder in os.listdir(self._raw_filepath):
             folder_path = os.path.join(os.path.abspath(self._raw_filepath), folder)
             if not os.path.isdir(folder_path): continue
+            encoding = reverse_mappings[folder]
             files = list(os.listdir(folder_path))
             assert len(files) == 1, \
                 "We only support one file per dataset folder!"
-            file_name = files[0]:
+            file_name = files[0]
             if not file_name.endswith(".csv"): continue
             filepath = os.path.join(folder_path, file_name)
             dataset = pd.read_csv(filepath)
             sample = dataset.sample(frac=0.1)
-            ed_directory[file[:-4]] = sample.to_json()
+            ed_directory[encoding] = sample.to_json()
         
         return ed_directory
 
@@ -178,23 +203,25 @@ class DatasetManager():
         folders in the directory and whose values represent the corresponding
         datasets. Assume only one dataset file per folder. 
 
-        An example of an ED Directory can look like this:
-
-        {
-            ...
-            'dataset1' : <dataset1 sample json>,
-            'dataset2' : <dataset2 sample json>
-            ...
-        }
+        See _generate_ed_directory docstring for an example of what an ED
+        Directory looks like.
         """
-        assert len(name) <= 30, \
+        assert len(key) <= 30, \
             "Keys for datasets can only be at most 30 characters long."
-
-        ed_directory = self._generate_ed_directory()
+        assert self._db_client, \
+            "DB client has not been set. Dataset Manager needs to be configured!"
+        assert self._ipfs_client, \
+            "IPFS client has not been set. Dataset Manager needs to be configured!"
         
+        ed_directory = self._generate_ed_directory()
+
+        self._db_client.add_labels([key], [self.label])
+
         receipt = setter(
-                    client=self._client, 
+                    client=self._ipfs_client, 
                     key=key, 
                     value=ed_directory, 
                     port=self._port
                 )
+        
+

@@ -133,18 +133,23 @@ def test_no_yaml_creation_repeat(good_dataset_manager):
     clean_up(good_dataset_manager)
 
 def test_ed_directory_format(good_dataset_manager):
+    good_dataset_manager.bootstrap()
     ed_directory = good_dataset_manager._generate_ed_directory()
+    filepath = os.path.join(good_dataset_manager._raw_filepath, 'datasets.yaml')
+    mappings = good_dataset_manager._mappings
 
     assert type(ed_directory == dict), \
         "ED Directory is not a dictionary!"
 
-    for folder, dataset in ed_directory.items():
-        assert folder in ('test1', 'test2'), \
-            "Key is not dataset folder name!"
+    for encoding, dataset in ed_directory.items():
+        assert encoding in mappings.keys(), \
+            "Key is not encoding in dataset mappings!"
         
         df = pd.read_json(dataset)
         assert len(df) == 1, \
             "Sample was not 10 percent of original data!"
+
+    clean_up(good_dataset_manager)
 '''
 uncomment when node is running
 
