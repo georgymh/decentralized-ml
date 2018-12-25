@@ -51,9 +51,8 @@ class DatasetManager():
         TODO: In the event of a invalid dataset path, log a useful message 
         for the user and don't terminate the service
 
-        TODO: Labeler is hardcoded to give every ED Directory a label of
-        'category'. Update this labeler so that it properly labels ED
-        Directories. 
+        TODO: Config Manager asks provider to label the data, but we need
+        to eventually build a classifier that does this automatically. 
         """
         config = config_manager.get_config()
         raw_filepath = config['GENERAL']['dataset_path']
