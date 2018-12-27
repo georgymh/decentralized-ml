@@ -208,14 +208,14 @@ class DatasetManager():
         """
         assert len(key) <= 30, \
             "Keys for datasets can only be at most 30 characters long."
-        assert self._db_client, \
-            "DB client has not been set. Dataset Manager needs to be configured!"
+        # assert self._db_client, \
+        #     "DB client has not been set. Dataset Manager needs to be configured!"
         assert self._ipfs_client, \
             "IPFS client has not been set. Dataset Manager needs to be configured!"
         
         ed_directory = self._generate_ed_directory()
 
-        self._db_client.add_labels([key], [self.label])
+        # self._db_client.add_labels([key], [self.label])
 
         receipt = setter(
                     client=self._ipfs_client, 
@@ -223,5 +223,5 @@ class DatasetManager():
                     value=ed_directory, 
                     port=self._port
                 )
-        
+        return receipt
 
