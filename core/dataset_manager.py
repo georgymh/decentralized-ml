@@ -64,7 +64,7 @@ class DatasetManager():
         self._port = config.getint("BLOCKCHAIN", "http_port")
         self._ipfs_client = None
         self._db_client = None
-        self.label = config['DATASET_MANAGER']['category']
+        self.classification = config['DATASET_MANAGER']['category']
 
     def configure(self, ipfs_client, db_client):
         """
@@ -217,7 +217,7 @@ class DatasetManager():
         
         ed_directory = self._generate_ed_directory()
 
-        self._db_client.add_labels([key], [self.label])
+        self._db_client.add_classifications([key], [self.classification])
 
         receipt = setter(
                     client=self._ipfs_client, 
