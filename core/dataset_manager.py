@@ -69,6 +69,8 @@ class DatasetManager():
     def configure(self, ipfs_client, db_client):
         """
         Sets up IPFS client for _communicate.
+
+        Sets up DB Client for pushing labels to DB.
         """
         self._ipfs_client = ipfs_client
         self._db_client = db_client
@@ -195,7 +197,7 @@ class DatasetManager():
         
         return ed_directory
 
-    def post_dataset(self, key):
+    def post_directories_and_category_labels(self, key):
         """
         Post the ED Directory on blockchain with the given key.
 

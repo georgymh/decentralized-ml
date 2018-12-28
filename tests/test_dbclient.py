@@ -58,8 +58,6 @@ def reset(db_client, data_provider_list):
         index=False
     )
 
-# Commenting out tests now due to nondeterministic bugs.
-
 def test_end_to_end(db_client):
     """
     NOTE: "get" tests sometimes fail because the table gets randomly
