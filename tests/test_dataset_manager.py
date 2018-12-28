@@ -165,27 +165,6 @@ def test_ed_directory_format(good_dataset_manager):
 
     clean_up(good_dataset_manager)
 
-def test_post_ed_directory(good_dataset_manager, good_config_manager, ipfs_client):
-    # get_val_before = getter(
-    #     client=ipfs_client,
-    #     key=TEST_SINGLE_KEY,
-    #     local_state=[],
-    #     port=blockchain_config_manager.getint('BLOCKCHAIN', 'http_port'),
-    #     timeout=blockchain_config_manager.getint('BLOCKCHAIN', 'timeout')
-    # )
-    good_dataset_manager.bootstrap()
-    good_dataset_manager.configure(ipfs_client, None)
-    tx_receipt = good_dataset_manager.post_dataset("hello world")
-    assert tx_receipt, "Setting failed"
-    good_config_manager = good_config_manager.get_config()
-    get_val_after = getter(
-        client=ipfs_client,
-        key=TEST_SINGLE_KEY,
-        local_state=[],
-        port=good_config_manager.getint('BLOCKCHAIN', 'http_port'),
-        timeout=good_config_manager.getint('BLOCKCHAIN', 'timeout')
-    )
-    # assert get_val_after == get_val_before + [TEST_VALUE], "Setter failed!"
 '''
 uncomment when node is running
 
