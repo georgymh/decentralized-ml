@@ -72,7 +72,7 @@ def setup_client(config_manager, client):
     dataset_manager.bootstrap()
     communication_manager.configure(scheduler, dataset_manager)
     blockchain_gateway.configure(config_manager, communication_manager, client)
-    scheduler.configure(communication_manager, client)
+    scheduler.configure(communication_manager, client, blockchain_gateway)
     return communication_manager, blockchain_gateway, scheduler
 
 def test_federated_learning_two_clients_automated(new_session_event, config_manager, ipfs_client):

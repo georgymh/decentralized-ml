@@ -83,7 +83,7 @@ def test_communication_manager_creates_new_sessions(dataset_manager, new_session
     communication_manager = CommunicationManager()
     scheduler = DMLScheduler(config_manager)
     communication_manager.configure(scheduler, dataset_manager)
-    scheduler.configure(communication_manager, ipfs_client)
+    scheduler.configure(communication_manager, ipfs_client, None)
     communication_manager.inform(
         MessageEventTypes.NEW_SESSION.name,
         new_session_event
@@ -98,7 +98,7 @@ def test_communication_manager_can_inform_new_job_to_the_optimizer(dataset_manag
     communication_manager = CommunicationManager()
     scheduler = DMLScheduler(config_manager)
     communication_manager.configure(scheduler, dataset_manager)
-    scheduler.configure(communication_manager, ipfs_client)
+    scheduler.configure(communication_manager, ipfs_client, None)
     true_job = make_initialize_job(make_model_json())
     true_job.hyperparams['epochs'] = 10
     true_job.hyperparams['batch_size'] = 128

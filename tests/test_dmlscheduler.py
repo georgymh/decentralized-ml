@@ -47,7 +47,7 @@ def communication_manager():
 @pytest.fixture
 def scheduler(config_manager, ipfs_client, communication_manager):
     scheduler = DMLScheduler(config_manager)
-    scheduler.configure(communication_manager, ipfs_client)
+    scheduler.configure(communication_manager, ipfs_client, None)
     return scheduler
 
 def test_dmlscheduler_sanity(scheduler):
