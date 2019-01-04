@@ -44,7 +44,8 @@ def communication_manager():
             serialized_job = self.job_info.get('serialized_job')
             self.job = deserialize_job(serialized_job)
             self.job.uuid = self.data_provider_info.get("dataset_uuid")
-            self.job.label_column_name = self.data_provider_info.get("label_column_name")
+            self.job.label_column_name = self.data_provider_info.get(
+                "label_column_name")
             assert self.job.uuid, "uuid of job not set!"
         def reset(self):
             self.dummy_msg_type = "None"
@@ -56,22 +57,26 @@ def communication_manager():
 def dataset_manager():
     class MockDatasetManager:
         def __init__(self):
-            self.mappings = [1234]
+            self.mappings = {1234: "hello"}
         def validate_key(self, key):
-            return key in self.mappings
+            return key in self.mappings.keys()
     return MockDatasetManager()
 
 @pytest.fixture	(scope='session')
-def blockchain_gateway(config_manager, communication_manager, ipfs_client, dataset_manager):	
+def blockchain_gateway(
+    config_manager, communication_manager, ipfs_client, dataset_manager):	
     blockchain_gateway = BlockchainGateway()
-    blockchain_gateway.configure(config_manager, communication_manager, ipfs_client, dataset_manager)
+    blockchain_gateway.configure(config_manager, communication_manager, 
+                                ipfs_client, dataset_manager)
     return blockchain_gateway	
 
-def test_blockchain_gateway_can_be_initialized(config_manager, communication_manager):	
+def test_blockchain_gateway_can_be_initialized(
+    config_manager, communication_manager):	
     blockchain_gateway = BlockchainGateway()
     assert blockchain_gateway is not None	
 
-def test_blockchain_gateway_can_listen_decentralized_learning(blockchain_gateway, communication_manager):
+def test_blockchain_gateway_can_listen_decentralized_learning(
+    blockchain_gateway, communication_manager):
     """
     Uses Mock Communication Manager to ensure that the Gateway
     can listen for decentralized learning.
@@ -100,9 +105,9 @@ def test_blockchain_gateway_can_listen_decentralized_learning(blockchain_gateway
         "dataset_uuid": 1234, "label_column_name": "label"
     }
     communication_manager.reset()
-    # assert communication_manager.dummy2[TxEnum.CONTENT.name] == {"model": "hello world"}, "Wrong dummy2"
 
-def test_blockchain_gateway_filters_sessions(blockchain_gateway, communication_manager):
+def test_blockchain_gateway_filters_sessions(
+    blockchain_gateway, communication_manager):
     """
     Ensures that the gatewawy won't intercept messages not intended for it
     """
@@ -125,7 +130,8 @@ def test_blockchain_gateway_filters_sessions(blockchain_gateway, communication_m
     # not hear it (filter_new_session() == False)
     # and therefore not update our communication manager
     assert communication_manager.dummy_msg_type == "None", \
-        "Shouldn't have heard anything but heard a message with uuid {}".format(communication_manager.job.uuid)
+        "Shouldn't have heard anything but heard a message with uuid {}".format(
+            communication_manager.job.uuid)
     assert communication_manager.data_provider_info == "None", \
         "Shouldn't have heard anything!"
     assert communication_manager.job_info == "None", \
