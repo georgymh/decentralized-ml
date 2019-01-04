@@ -22,27 +22,35 @@ logging.basicConfig(level=logging.INFO,
 class DatasetManager():
     """
     Dataset Manager
+
     This class takes in an filepath to raw data upon initialization.
     Some functionalities include:
+
         1. Validating data.
         2. TODO: Detecting changes in data 
         3. TODO: Validating data after changes, validating only new data?
+
     Each instance corresponds to a set of raw data. The directory should look 
     something like this:
+
     main/
         dataset1/
             dataset1.csv
         dataset2/
             dataset2.csv
+
     The Dataset Manager will be initialized in the Bootstrapper. 
     """
 
     def __init__(self, config_manager):
         """
         Take in an filepath to the raw data.
+
         For now, throw an exception if a valid dataset path is not provided.
+
         TODO: In the event of a invalid dataset path, log a useful message 
         for the user and don't terminate the service
+
         TODO: Config Manager asks provider to label the data, but we need
         to eventually build a classifier that does this automatically. 
         """
@@ -54,8 +62,7 @@ class DatasetManager():
         self._mappings = None
         self._validate_data()
         self._port = config.getint("BLOCKCHAIN", "http_port")
-        # TODO: Change this
-        self._frac = 0.1
+        self._frac = config['DATASET_MANAGER']['sample_fraction']
         self._ipfs_client = None
         self._db_client = None
         self.classification = config['DATASET_MANAGER']['category']
@@ -63,16 +70,11 @@ class DatasetManager():
     def configure(self, ipfs_client, db_client):
         """
         Sets up IPFS client for _communicate.
+
         Sets up DB Client for pushing labels to DB.
         """
         self._ipfs_client = ipfs_client
         self._db_client = db_client
-    
-    def validate_key(self, key):
-         """
-         Check whether this dataset_manager is responsible for the given key (uuid)
-         """
-         return key in self._mappings.keys()
     
     def _validate_data(self):
         """
@@ -127,6 +129,7 @@ class DatasetManager():
         """
         Check if datasets.yaml exists. If so, load it into the class (if it
         hasn't been already). Otherwise, call _create_dataset_mappings
+
         Returns True if mappings had to be created, and False otherwise 
         (used for testing).
         """
@@ -144,10 +147,12 @@ class DatasetManager():
         """
         mapping_filepath is the filepath where datasets.yaml is created, which
         is <raw_filepath>/datasets.yaml.
+
         For each dataset folder in the raw_filepath, generate a random string
         using uuid and add a (key, value) pair to a dictionary such that the 
         random string is key and the dataset folder name is the value. Store
         the dictionary in _mappings and in a yaml file at mapping_filepath.
+
         Ultimately, we are assigning identifiers for each dataset.
         """
         mappings = {}
@@ -163,6 +168,7 @@ class DatasetManager():
         This is a helper method that encompasses the logic for creating the
         ED Directory. Given the directory example in the class docstring, 
         an example of an ED Directory can look like this:
+
         {
             ...
             <dataset1_uuid> : (<dataset1 sample json>, <dataset1 metadata json>),
@@ -195,9 +201,11 @@ class DatasetManager():
     def post_directories_and_category_labels(self, key):
         """
         Post the ED Directory on blockchain with the given key.
+
         The ED Directory is a JSON dictionary whose keys represent the dataset
         folders in the directory and whose values represent the corresponding
         datasets. Assume only one dataset file per folder. 
+
         See _generate_ed_directory docstring for an example of what an ED
         Directory looks like.
         """
