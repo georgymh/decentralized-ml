@@ -99,7 +99,7 @@ class CommunicationManager(object):
         assert payload.get(TxEnum.KEY.name) is MessageEventTypes.NEW_SESSION.name, \
             "Expected a new session but got {}".format(payload.get(TxEnum.KEY.name))
         initialization_payload = payload.get(TxEnum.CONTENT.name)
-        # logging.info("New optimizer session is being set up...{}".format(initialization_payload))
+        logging.info("New optimizer session is being set up...")
         self.optimizer = FederatedAveragingOptimizer(
                             initialization_payload,
                             self.dataset_manager
