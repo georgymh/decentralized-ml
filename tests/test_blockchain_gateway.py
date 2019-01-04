@@ -9,6 +9,7 @@ from core.blockchain.blockchain_utils   import setter, TxEnum
 from core.utils.dmljob                  import deserialize_job, serialize_job
 from tests.testing_utils import make_initialize_job, make_model_json
 
+
 @pytest.fixture(scope='session')
 def config_manager():	
     config_manager = ConfigurationManager()

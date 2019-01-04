@@ -17,7 +17,6 @@ from data.iterators import count_datapoints
 from core.utils.dmljob import serialize_job
 from core.blockchain.blockchain_utils import TxEnum
 
-session_filepaths = set()
 
 @pytest.fixture(scope='session')
 def config_manager():

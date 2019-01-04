@@ -13,16 +13,6 @@ from core.blockchain.blockchain_utils import getter, setter
 from core.configuration import ConfigurationManager
 from core.dataset_manager import DatasetManager
 
-TEST_NONEXISTENT_KEY = 'nonexistence'
-TEST_SINGLE_KEY = 'singleton'
-TEST_MULTIPLE_KEY = 'multiplicity'
-TEST_VALUE = 'World!'
-
-@pytest.fixture(scope='session')
-def ipfs_client(good_config_manager):
-    good_config_manager = good_config_manager.get_config()
-    return ipfsapi.connect(good_config_manager.get('BLOCKCHAIN', 'host'), 
-                            good_config_manager.getint('BLOCKCHAIN', 'ipfs_port'))
 
 @pytest.fixture(scope='session')
 def good_config_manager():
