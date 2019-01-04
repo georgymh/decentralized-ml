@@ -62,7 +62,7 @@ class DatasetManager():
         self._mappings = None
         self._validate_data()
         self._port = config.getint("BLOCKCHAIN", "http_port")
-        self._frac = config['DATASET_MANAGER']['sample_fraction']
+        self._frac = float(config['DATASET_MANAGER']['sample_fraction'])
         self._ipfs_client = None
         self._db_client = None
         self.classification = config['DATASET_MANAGER']['category']
@@ -75,6 +75,9 @@ class DatasetManager():
         """
         self._ipfs_client = ipfs_client
         self._db_client = db_client
+    
+    def validate_key(self, key):
+        return key in self._mappings.keys()
     
     def _validate_data(self):
         """
@@ -192,7 +195,7 @@ class DatasetManager():
             if not file_name.endswith(".csv"): continue
             filepath = os.path.join(folder_path, file_name)
             dataset = pd.read_csv(filepath)
-            sample = dataset.sample(frac=0.1)
+            sample = dataset.sample(frac=self._frac)
             metadata = dataset.describe()
             ed_directory[encoding] = (sample.to_json(), metadata.to_json())
         

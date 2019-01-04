@@ -162,8 +162,8 @@ def test_optimizer_schedules_communication_after_training(initialization_payload
     for job in job_arr:
         assert job.job_type == JobTypes.JOB_COMM.name
 
-# def test_optimizer_waits_to_average_until_trained(initialization_payload, train_dmlresult_obj):
-#     optimizer = FederatedAveragingOptimizer(initialization_payload)
+# def test_optimizer_waits_to_average_until_trained(initialization_payload, train_dmlresult_obj, dataset_manager):
+#     optimizer = FederatedAveragingOptimizer(initialization_payload, dataset_manager)
 #     args = {
 #         TxEnum.KEY.name: MessageEventTypes.NEW_WEIGHTS.name,
 #         TxEnum.CONTENT.name: serialize_job(train_dmlresult_obj.job)
