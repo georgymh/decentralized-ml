@@ -58,14 +58,13 @@ class DMLRunner(object):
             JobTypes.JOB_COMM.name: self._communicate,
         }
     
-    def configure(self, ipfs_client, blockchain_gateway):
+    def configure(self, ipfs_client):
         """
-        Sets up IPFS client and blockchain_client for _communicate
+        Sets up IPFS client and blockchain_state for _communicate
         """
         self._client = ipfs_client
-        self._blockchain_gateway = blockchain_gateway
 
-    def run_job(self, job):
+    def run_job(self, job, state):
         """
         Identifies a DMLJob type and executes it.
 
@@ -79,7 +78,7 @@ class DMLRunner(object):
             self.JOB_CALLBACKS,
         )
         try:
-            results = callback(job)
+            results = callback(job, state)
         except Exception as e:
             logging.error("RunnerError: " + str(e))
             results = DMLResult(
@@ -105,7 +104,7 @@ class DMLRunner(object):
                             )
         return train_path, test_path
 
-    def _train(self, job):
+    def _train(self, job, state=None):
         """
         Trains the specified machine learning model on all the local data,
         starting from the initial model state specified, until a stopping
@@ -234,7 +233,7 @@ class DMLRunner(object):
         )
         return results
 
-    def _initialize(self, job):
+    def _initialize(self, job, state=None):
         """
         Initializes and returns a DMLResult with the model
         weights as specified in the model.
@@ -256,7 +255,7 @@ class DMLRunner(object):
                 )
         return results
 
-    def _communicate(self, job):
+    def _communicate(self, job, state):
         """
         Communicates a message to the blockchain using the Runner's
         IPFS client, puts the tx_receipt in DMLResult.
@@ -266,7 +265,7 @@ class DMLRunner(object):
             key = job.key,
             port = self._port,
             value = serialize_job(job),
-            blockchain_gateway=self._blockchain_gateway
+            state_append=state
         )
         results = DMLResult(
             status='successful',
@@ -278,7 +277,7 @@ class DMLRunner(object):
         )
         return results
 
-    def _split_data(self, job):
+    def _split_data(self, job, state):
         """
         Takes in a job, which should have the raw filepath assigned.
 

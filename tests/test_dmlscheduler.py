@@ -38,16 +38,19 @@ def mnist_filepath():
 class MockCommunicationManager:
     def inform(self, dummy1, dummy2):
         pass
+    def configure(self, scheduler, dataset_manager):
+        pass
 
 @pytest.fixture
 def communication_manager():
-    communication_manager = CommunicationManager()
+    communication_manager = MockCommunicationManager()
     return communication_manager
 
 @pytest.fixture
-def blockchain_gateway(config_manager, ipfs_client, communication_manager):
+def blockchain_gateway(config_manager, ipfs_client, communication_manager, dataset_manager):
     blockchain_gateway = BlockchainGateway()
-    blockchain_gateway.configure(config_manager, communication_manager, ipfs_client)
+    blockchain_gateway.configure(config_manager, communication_manager, ipfs_client, dataset_manager)
+    return blockchain_gateway
 
 @pytest.fixture
 def dataset_manager(config_manager):
@@ -63,6 +66,20 @@ def scheduler(config_manager, ipfs_client, communication_manager, blockchain_gat
     scheduler.configure(communication_manager, ipfs_client, blockchain_gateway)
     communication_manager.configure(scheduler, dataset_manager)
     return scheduler
+
+def test_dmlscheduler_communicate_single(scheduler, blockchain_gateway):
+    blockchain_gateway._listen(lambda *args: None,
+        lambda *args: None)
+    communicate_job = make_communicate_job("testkey", "testweights")
+    scheduler.add_job(communicate_job)
+    result = scheduler.runners_run_next_jobs()
+    timeout = time.time() + 3
+    while time.time() < timeout and not scheduler.processed:
+        time.sleep(0.1)
+    state = blockchain_gateway.state
+    blockchain_gateway._listen(lambda *args: None,
+        lambda *args: None)
+    assert blockchain_gateway.state == state
 
 def test_dmlscheduler_sanity(scheduler):
     """

@@ -28,6 +28,14 @@ def config_manager():
     return config_manager
 
 @pytest.fixture(scope='session')
+def config_manager_two():
+    config_manager = ConfigurationManager()
+    config_manager.bootstrap(
+        config_filepath='tests/artifacts/integration/configuration2.ini'
+    )
+    return config_manager
+
+@pytest.fixture(scope='session')
 def ipfs_client(config_manager):
     config = config_manager.get_config()
     return ipfsapi.connect(config.get('BLOCKCHAIN', 'host'), 
@@ -36,6 +44,10 @@ def ipfs_client(config_manager):
 @pytest.fixture(scope='session')
 def mnist_uuid():
     return 'd16c6e86-d103-4e71-8741-ee1f888d206c'
+
+@pytest.fixture(scope='session')
+def mnist_uuid_two():
+    return '0fcf9cbb-39df-4ad6-9042-a64c87fecfb3'
 
 @pytest.fixture(scope='session')
 def transformed_filepath():
@@ -51,18 +63,31 @@ def cleanup(transformed_filepath):
 
 @pytest.fixture(scope='session')
 def new_session_event(mnist_uuid):
-    serialized_job = make_serialized_job_with_uuid(mnist_uuid)
+    serialized_job = serialize_job(make_initialize_job(make_model_json()))
     new_session_event = {
-        TxEnum.KEY.name: None,
-        TxEnum.CONTENT.name: {
+        # TxEnum.KEY.name: None,
+        # TxEnum.CONTENT.name: {
             "optimizer_params": {"num_averages_per_round": 2, "max_rounds": 2},
-            "serialized_job": serialized_job
-        }
+            "serialized_job": serialized_job,
+            "participants": ['0fcf9cbb-39df-4ad6-9042-a64c87fecfb3', 
+                            'd16c6e86-d103-4e71-8741-ee1f888d206c']
+        # }
     }
     return new_session_event
 
-@pytest.fixture
-def gateway_and_scheduler_and_communication_manager(config_manager, ipfs_client, dataset_manager):
+@pytest.fixture(scope='session')
+def new_session_key(mnist_uuid):
+    return {"dataset_uuid": mnist_uuid, "label_column_name": "label"}
+
+@pytest.fixture(scope='session')
+def new_session_key_two(mnist_uuid_two):
+    return {"dataset_uuid": mnist_uuid_two, "label_column_name": "label"}
+
+def setup_client(config_manager, client):
+    """
+    Set up and return communication_manager, blockchain_gateway, scheduler
+    """
+    communication_manager = CommunicationManager()
     blockchain_gateway = BlockchainGateway()
     scheduler = DMLScheduler(config_manager)
     communication_manager = CommunicationManager()    
@@ -209,33 +234,28 @@ def test_communication_manager_integration(new_session_event, config_manager, ip
     train, (and soon communicate) a model, and average a model.
     This is everything that happens in this test:
 
-    (1) Communication Manager receives the packet it's going to receive from
-        BlockchainGateway
+    (1) Communication Manager receives the packet it's going to receive from BlockchainGateway
     (2) Communication Manager gives packet to Optimizer
     (3) Optimizer tells Communication Manager to schedule an initialization job
     (4) Communication Manager schedules initialization job
-    (5) Communication Manager receives DMLResult for initialization job from
-        Scheduler
+    (5) Communication Manager receives DMLResult for initialization job from Scheduler
     (6) Communication Manager gives DMLResult to Optimizer
     (7) Optimizer updates its weights to initialized model
     (8) Optimizer tells Communication Manager to schedule a training job
     (9) Communication Manager schedules training job
-    (10) Communication Manager receives DMLResult for training job from
-         Scheduler
+    (10) Communication Manager receives DMLResult for training job from Scheduler
     (11) Communication Manager gives DMLResult to Optimizer
     (12) Optimizer updates its weights to trained weights
     (13) Optimizer tells Communication Manager to schedule a communication job
     (14) Communication Manager schedules communication job
-    (15) Communication Manager receives DMLResult for communication job from
-         Scheduler
+    (15) Communication Manager receives DMLResult for communication job from Scheduler
     (16) Communication Manager gives DMLResult to Optimizer
     (17) Optimizer tells the Communication Manager to do nothing
     (18) Communication Manager receives new weights from Blockchain Gateway
     (19) Communication Manager gives new weights to Optimizer
     (20) Optimizer tells Communication Manager to schedule an averaging job
     (21) Communication Manager schedules averaging job
-    (22) Communication Manager receives DMLResult for averaging job from
-        Scheduler
+    (22) Communication Manager receives DMLResult for averaging job from Scheduler
     (23) Communication Manager gives DMLResult to Optimizer
     (24) Optimizer updates its weights to initialized model and increments num_averages_per_round
     (25) Optimizer tells Communication Manager to do nothing
@@ -243,21 +263,26 @@ def test_communication_manager_integration(new_session_event, config_manager, ip
     (27) Communication Manager gives new weights to Optimizer
     (28) Optimizer tells Communication Manager to schedule an averaging job
     (29) Communication Manager schedules averaging job
-    (30) Communication Manager receives DMLResult for averaging job from
-        Scheduler
+    (30) Communication Manager receives DMLResult for averaging job from Scheduler
     (31) Communication Manager gives DMLResult to Optimizer
     (32) Optimizer updates its weights to initialized model and increments num_averages_per_round
     (33) Optimizer tells Communication Manager to schedule a training job since it's heard enough
 
     NOTE: Timeout errors can be as a result of Runners repeatedly erroring. Check logs for this.
     """
-    blockchain_gateway, scheduler, communication_manager = gateway_and_scheduler_and_communication_manager
-    communication_manager.configure(scheduler, dataset_manager)
-    scheduler.configure(communication_manager, ipfs_client, blockchain_gateway)
-    # blockchain_gateway.configure(config_manager, communication_manager, ipfs_client)
+    communication_manager, blockchain_gateway, scheduler = setup_client(
+        config_manager, ipfs_client)
+    nested_dict = {
+        TxEnum.KEY.name: new_session_key,
+        TxEnum.CONTENT.name: new_session_event
+    }
+    args = {
+        TxEnum.KEY.name: MessageEventTypes.NEW_SESSION.name,
+        TxEnum.CONTENT.name: nested_dict
+    }
     communication_manager.inform(
-        MessageEventTypes.NEW_SESSION.name,
-        new_session_event
+        RawEventTypes.NEW_MESSAGE.name,
+        args
     )
     
     assert communication_manager.optimizer.job.job_type == JobTypes.JOB_INIT.name or \
@@ -333,4 +358,5 @@ def test_communication_manager_integration(new_session_event, config_manager, ip
     # now we should be ready to train
     assert communication_manager.optimizer.job.job_type == JobTypes.JOB_TRAIN.name, \
         "Should be ready to train!"
+    scheduler.reset()
     # and that completes one local round of federated learning!

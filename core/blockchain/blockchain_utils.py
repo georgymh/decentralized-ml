@@ -119,24 +119,27 @@ def getter(client: object, key: str, local_state: list, port: int, timeout: int,
     return download(client, key, new_state)
 
 def setter(client: object, key: str, port: int, value: object, flag: bool = False, 
-            host: str = '127.0.0.1', blockchain_gateway: object = None) -> str:
+            host: str = '127.0.0.1', state_append: object = False) -> str:
     """
     Provided a key and a JSON/np.array object, upload the object to IPFS and
     then store the hash as the value on the blockchain. The key should be a
-    backward reference to a prior tx
+    backward reference to a prior tx unless flag is set, in which case the key
+    is also stored onto the blockchain
     TODO: decide on error handling that matches `get_global_state`
     """
     logging.info("Setting to blockchain...")
     on_chain_value = upload(client, value) if value else None
-    key = on_chain_value if flag else key
+    key = upload(client, key) if flag else key
     tx = Transaction(key, on_chain_value)
     tx_receipt = None
     try:
         tx_receipt = make_setter_call(host, port, tx.get_tx())
     except Exception as e:
         logging.info("HTTP POST error, got: {0}".format(e))
-    if blockchain_gateway:
-        blockchain_gateway.state_append(tx.get_tx())
+    if state_append != False:
+        logging.info("State before append: {}".format(state_append))
+        state_append.append(tx.get_tx())
+        logging.info("State after append: {}".format(state_append))
     return tx_receipt.text
 
 ##############################################################################
