@@ -9,6 +9,9 @@ import ipfsapi
 
 from core.scheduler             import DMLScheduler
 from core.configuration         import ConfigurationManager
+from core.blockchain.blockchain_gateway import BlockchainGateway
+from core.communication_manager import CommunicationManager
+from core.dataset_manager       import DatasetManager
 from tests.testing_utils        import (make_initialize_job, make_model_json, \
                                         make_split_job, make_communicate_job)
 
@@ -36,18 +39,29 @@ class MockCommunicationManager:
     def inform(self, dummy1, dummy2):
         pass
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def communication_manager():
-    communication_manager = MockCommunicationManager()
+    communication_manager = CommunicationManager()
     return communication_manager
 
+@pytest.fixture
+def blockchain_gateway(config_manager, ipfs_client, communication_manager):
+    blockchain_gateway = BlockchainGateway()
+    blockchain_gateway.configure(config_manager, communication_manager, ipfs_client)
+
+@pytest.fixture
+def dataset_manager(config_manager):
+    dataset_manager = DatasetManager(config_manager)
+    dataset_manager.bootstrap()
+    return dataset_manager
 # NOTE: This is scope=function and not scope=session because of multiprocessing.
 # If it's scope=session, tests will get interrupted by each other and then the assertions
 # will fail because more jobs will be processed than they expected.
 @pytest.fixture
-def scheduler(config_manager, ipfs_client, communication_manager):
+def scheduler(config_manager, ipfs_client, communication_manager, blockchain_gateway, dataset_manager):
     scheduler = DMLScheduler(config_manager)
-    scheduler.configure(communication_manager, ipfs_client, None)
+    scheduler.configure(communication_manager, ipfs_client, blockchain_gateway)
+    communication_manager.configure(scheduler, dataset_manager)
     return scheduler
 
 def test_dmlscheduler_sanity(scheduler):

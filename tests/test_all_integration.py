@@ -61,135 +61,149 @@ def new_session_event(mnist_uuid):
     }
     return new_session_event
 
-def setup_client(config_manager, client):
-    """
-    Set up and return communication_manager, blockchain_gateway, scheduler
-    """
-    communication_manager = CommunicationManager()
+@pytest.fixture
+def gateway_and_scheduler_and_communication_manager(config_manager, ipfs_client, dataset_manager):
     blockchain_gateway = BlockchainGateway()
     scheduler = DMLScheduler(config_manager)
+    communication_manager = CommunicationManager()    
+    return blockchain_gateway, scheduler, communication_manager
+
+# @pytest.fixture
+# def scheduler(config_manager, ipfs_client, communication_manager, blockchain_gateway):
+#     return scheduler
+
+@pytest.fixture(scope='session')
+def dataset_manager(config_manager):
     dataset_manager = DatasetManager(config_manager)
     dataset_manager.bootstrap()
-    communication_manager.configure(scheduler, dataset_manager)
-    blockchain_gateway.configure(config_manager, communication_manager, client)
-    scheduler.configure(communication_manager, client, blockchain_gateway)
-    return communication_manager, blockchain_gateway, scheduler
+    return dataset_manager
 
-def test_federated_learning_two_clients_automated(new_session_event, config_manager, ipfs_client):
-    """
-    Tests fully automated federated learning.
-    """
-    # Set up first client
-    communication_manager, blockchain_gateway, scheduler = setup_client(config_manager, ipfs_client)
-    # Set up second client
-    communication_manager_2, blockchain_gateway_2, scheduler_2 = setup_client(config_manager, ipfs_client)
-    # (0) Someone sends decentralized learning event to the chain
-    tx_receipt = setter(
-        client=blockchain_gateway._client,
-        key=None, 
-        port=blockchain_gateway._port,
-        value=new_session_event, 
-        flag=True
-    )
-    assert tx_receipt
-    scheduler.start_cron(period_in_mins=0.01)
-    scheduler_2.start_cron(period_in_mins=0.01)
-    blockchain_gateway.start_cron(period_in_mins=0.01)
-    blockchain_gateway_2.start_cron(period_in_mins=0.01)
-    timeout = 40 + time.time()
-    while time.time() < timeout and (len(scheduler.processed) != 10 or len(scheduler_2.processed) != 10):
-        time.sleep(5)
-    scheduler.stop_cron()
-    scheduler_2.stop_cron()
-    blockchain_gateway.stop_cron()
-    blockchain_gateway_2.stop_cron()
-    assert len(scheduler.processed) == 10, \
-        "Jobs {} failed/not completed in time!".format([
-        result.job.job_type for result in scheduler.processed])  
-    assert len(scheduler_2.processed) == 10, \
-        "Jobs {} failed/not completed in time!".format([
-        result.job.job_type for result in scheduler_2.processed])    
-    assert communication_manager.optimizer is None
-    assert communication_manager_2.optimizer is None
+# @pytest.fixture
+# def communication_manager(scheduler, dataset_manager):
+#     return communication_manager
 
-def test_federated_learning_two_clients_manual(new_session_event, config_manager, ipfs_client):
-    """
-    Integration test that checks that one round of federated learning can be
-    COMPLETED with max_rounds = 2, num_averages_per_round = 2
+# def setup_client(config_manager, client):
+#     """
+#     Set up and return communication_manager, blockchain_gateway, scheduler
+#     """
+    
+#     return communication_manager, blockchain_gateway, scheduler
 
-    This is everything that happens in this test:
+# def test_federated_learning_two_clients_automated(new_session_event, config_manager, ipfs_client):
+#     """
+#     Tests fully automated federated learning.
+#     """
+#     # Set up first client
+#     communication_manager, blockchain_gateway, scheduler = setup_client(config_manager, ipfs_client)
+#     # Set up second client
+#     communication_manager_2, blockchain_gateway_2, scheduler_2 = setup_client(config_manager, ipfs_client)
+#     # (0) Someone sends decentralized learning event to the chain
+#     tx_receipt = setter(
+#         client=blockchain_gateway._client,
+#         key=None, 
+#         port=blockchain_gateway._port,
+#         value=new_session_event, 
+#         flag=True
+#     )
+#     assert tx_receipt
+#     scheduler.start_cron(period_in_mins=0.01)
+#     scheduler_2.start_cron(period_in_mins=0.01)
+#     blockchain_gateway.start_cron(period_in_mins=0.01)
+#     blockchain_gateway_2.start_cron(period_in_mins=0.01)
+#     timeout = 40 + time.time()
+#     while time.time() < timeout and (len(scheduler.processed) != 10 or len(scheduler_2.processed) != 10):
+#         time.sleep(5)
+#     scheduler.stop_cron()
+#     scheduler_2.stop_cron()
+#     blockchain_gateway.stop_cron()
+#     blockchain_gateway_2.stop_cron()
+#     assert len(scheduler.processed) == 10, \
+#         "Jobs {} failed/not completed in time!".format([
+#         result.job.job_type for result in scheduler.processed])  
+#     assert len(scheduler_2.processed) == 10, \
+#         "Jobs {} failed/not completed in time!".format([
+#         result.job.job_type for result in scheduler_2.processed])    
+#     assert communication_manager.optimizer is None
+#     assert communication_manager_2.optimizer is None
 
-    """
-    # Set up first client
-    communication_manager, blockchain_gateway, scheduler = setup_client(config_manager, ipfs_client)
-    # Set up second client
-    communication_manager_2, blockchain_gateway_2, scheduler_2 = setup_client(config_manager, ipfs_client)
-    # set up new session
-    # (0) Someone sends decentralized learning event to the chain
-    tx_receipt = setter(blockchain_gateway._client, None, blockchain_gateway._port, new_session_event, True)
-    assert tx_receipt
-    # (1) Gateway_1 listens for the event
-    blockchain_gateway._listen(blockchain_gateway._handle_new_session_creation, 
-        blockchain_gateway._filter_new_session)
-    # (2) Gateway_2 listens for the event
-    blockchain_gateway_2._listen(blockchain_gateway_2._handle_new_session_creation, 
-        blockchain_gateway_2._filter_new_session)
-    # (3) Scheduler_1 and Scheduler_2 runs the following jobs:
-        # (3a.1) JOB_INIT
-        # (3a.2) JOB_SPLIT
-        # (3b) JOB_TRAIN
-        # (3c) JOB_COMM
-    scheduler.start_cron(period_in_mins = 0.01)
-    scheduler_2.start_cron(period_in_mins=0.01)
-    timeout = time.time() + 25
-    while time.time() < timeout and (len(scheduler.processed) != 4\
-        or len(scheduler_2.processed) != 4):
-        time.sleep(5)
-    assert len(scheduler.processed) == 4, "Jobs failed/not completed in time!"
-    assert len(scheduler_2.processed) == 4, "Jobs failed/not completed in time!"
-    # (4) Gateway_1 listens for the new weights 
-    blockchain_gateway._listen(blockchain_gateway._handle_new_session_info,
-        blockchain_gateway._filter_new_session_info)
-    # (6) Gateway_2 listens for the new weights
-    blockchain_gateway_2._listen(blockchain_gateway_2._handle_new_session_info,
-        blockchain_gateway_2._filter_new_session_info)
-    # (8) Scheduler_1 and Scheduler_2 runs the following jobs:
-        # (6a) JOB_AVG
-        # (6b) JOB_AVG
-        # (6a) JOB_TRAIN
-        # (6a) JOB_COMM
-    timeout = time.time() + 20
-    while time.time() < timeout and (len(scheduler.processed) != 8\
-        or len(scheduler_2.processed) != 8):
-        time.sleep(4)
-    assert len(scheduler.processed) == 8, \
-        "Jobs {} failed/not completed in time!".format([
-            result.job.job_type for result in scheduler.processed])
-    assert len(scheduler_2.processed) == 8, "Jobs failed/not completed in time!"
-    # (4) Gateway_1 listens for the new weights 
-    blockchain_gateway._listen(blockchain_gateway._handle_new_session_info,
-        blockchain_gateway._filter_new_session_info)
-    # (6) Gateway_2 listens for the new weights
-    blockchain_gateway_2._listen(blockchain_gateway_2._handle_new_session_info,
-        blockchain_gateway_2._filter_new_session_info)
-    # (13) Optimizer tells Communication Manager to schedule JOB_AVG
-    # (14) Scheduler_1 and Scheduler_2 runs the following jobs:
-        # (9a) JOB_AVG
-        # (9a) JOB_AVG
-    timeout = time.time() + 10
-    while time.time() < timeout and (len(scheduler.processed) != 10\
-        or len(scheduler_2.processed) != 10):
-        time.sleep(2)
-    scheduler.stop_cron()
-    scheduler_2.stop_cron()
-    assert len(scheduler.processed) == 10, "Jobs failed/not completed in time!"
-    assert len(scheduler_2.processed) == 10, "Jobs failed/not completed in time!"
-    # (10) Optimizer terminates
-    assert communication_manager.optimizer is None, "Should have terminated!"
-    assert communication_manager_2.optimizer is None, "Should have terminated!"
-    # and that completes one local round of federated learning!
+# def test_federated_learning_two_clients_manual(new_session_event, config_manager, ipfs_client):
+#     """
+#     Integration test that checks that one round of federated learning can be
+#     COMPLETED with max_rounds = 2, num_averages_per_round = 2
 
-def test_communication_manager_integration(new_session_event, config_manager, ipfs_client):
+#     This is everything that happens in this test:
+
+#     """
+#     # Set up first client
+#     communication_manager, blockchain_gateway, scheduler = setup_client(config_manager, ipfs_client)
+#     # Set up second client
+#     communication_manager_2, blockchain_gateway_2, scheduler_2 = setup_client(config_manager, ipfs_client)
+#     # set up new session
+#     # (0) Someone sends decentralized learning event to the chain
+#     tx_receipt = setter(blockchain_gateway._client, None, blockchain_gateway._port, new_session_event, True)
+#     assert tx_receipt
+#     # (1) Gateway_1 listens for the event
+#     blockchain_gateway._listen(blockchain_gateway._handle_new_session_creation, 
+#         blockchain_gateway._filter_new_session)
+#     # (2) Gateway_2 listens for the event
+#     blockchain_gateway_2._listen(blockchain_gateway_2._handle_new_session_creation, 
+#         blockchain_gateway_2._filter_new_session)
+#     # (3) Scheduler_1 and Scheduler_2 runs the following jobs:
+#         # (3a.1) JOB_INIT
+#         # (3a.2) JOB_SPLIT
+#         # (3b) JOB_TRAIN
+#         # (3c) JOB_COMM
+#     scheduler.start_cron(period_in_mins = 0.01)
+#     scheduler_2.start_cron(period_in_mins=0.01)
+#     timeout = time.time() + 25
+#     while time.time() < timeout and (len(scheduler.processed) != 4\
+#         or len(scheduler_2.processed) != 4):
+#         time.sleep(5)
+#     assert len(scheduler.processed) == 4, "Jobs failed/not completed in time!"
+#     assert len(scheduler_2.processed) == 4, "Jobs failed/not completed in time!"
+#     # (4) Gateway_1 listens for the new weights 
+#     blockchain_gateway._listen(blockchain_gateway._handle_new_session_info,
+#         blockchain_gateway._filter_new_session_info)
+#     # (6) Gateway_2 listens for the new weights
+#     blockchain_gateway_2._listen(blockchain_gateway_2._handle_new_session_info,
+#         blockchain_gateway_2._filter_new_session_info)
+#     # (8) Scheduler_1 and Scheduler_2 runs the following jobs:
+#         # (6a) JOB_AVG
+#         # (6b) JOB_AVG
+#         # (6a) JOB_TRAIN
+#         # (6a) JOB_COMM
+#     timeout = time.time() + 20
+#     while time.time() < timeout and (len(scheduler.processed) != 8\
+#         or len(scheduler_2.processed) != 8):
+#         time.sleep(4)
+#     assert len(scheduler.processed) == 8, \
+#         "Jobs {} failed/not completed in time!".format([
+#             result.job.job_type for result in scheduler.processed])
+#     assert len(scheduler_2.processed) == 8, "Jobs failed/not completed in time!"
+#     # (4) Gateway_1 listens for the new weights 
+#     blockchain_gateway._listen(blockchain_gateway._handle_new_session_info,
+#         blockchain_gateway._filter_new_session_info)
+#     # (6) Gateway_2 listens for the new weights
+#     blockchain_gateway_2._listen(blockchain_gateway_2._handle_new_session_info,
+#         blockchain_gateway_2._filter_new_session_info)
+#     # (13) Optimizer tells Communication Manager to schedule JOB_AVG
+#     # (14) Scheduler_1 and Scheduler_2 runs the following jobs:
+#         # (9a) JOB_AVG
+#         # (9a) JOB_AVG
+#     timeout = time.time() + 10
+#     while time.time() < timeout and (len(scheduler.processed) != 10\
+#         or len(scheduler_2.processed) != 10):
+#         time.sleep(2)
+#     scheduler.stop_cron()
+#     scheduler_2.stop_cron()
+#     assert len(scheduler.processed) == 10, "Jobs failed/not completed in time!"
+#     assert len(scheduler_2.processed) == 10, "Jobs failed/not completed in time!"
+#     # (10) Optimizer terminates
+#     assert communication_manager.optimizer is None, "Should have terminated!"
+#     assert communication_manager_2.optimizer is None, "Should have terminated!"
+#     # and that completes one local round of federated learning!
+
+def test_communication_manager_integration(new_session_event, config_manager, ipfs_client, gateway_and_scheduler_and_communication_manager, dataset_manager):
     """
     Integration test that checks that the Communication Manager can initialize,
     train, (and soon communicate) a model, and average a model.
@@ -237,7 +251,10 @@ def test_communication_manager_integration(new_session_event, config_manager, ip
 
     NOTE: Timeout errors can be as a result of Runners repeatedly erroring. Check logs for this.
     """
-    communication_manager, blockchain_gateway, scheduler = setup_client(config_manager, ipfs_client)
+    blockchain_gateway, scheduler, communication_manager = gateway_and_scheduler_and_communication_manager
+    communication_manager.configure(scheduler, dataset_manager)
+    scheduler.configure(communication_manager, ipfs_client, blockchain_gateway)
+    # blockchain_gateway.configure(config_manager, communication_manager, ipfs_client)
     communication_manager.inform(
         MessageEventTypes.NEW_SESSION.name,
         new_session_event
