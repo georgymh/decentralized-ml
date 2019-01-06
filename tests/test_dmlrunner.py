@@ -90,6 +90,7 @@ def train_dmlresult_obj(config_manager, split_dmlresult_obj, init_dmlresult_obj,
                 )
     result = runner.run_job(train_job)
     return result
+
 def test_dmlrunner_uniform_initialization(config_manager, ipfs_client):
     runner = DMLRunner(config_manager)
     runner.configure(ipfs_client)
