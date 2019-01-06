@@ -38,8 +38,7 @@ def cleanup(transformed_filepath, transformed_filepath_2):
 def config_manager():
     config_manager = ConfigurationManager()
     config_manager.bootstrap(
-        config_filepath='tests/artifacts/runner_scheduler/configuration.ini'
-    )
+        config_filepath='tests/artifacts/runner_scheduler/configuration.ini')
     return config_manager
 
 @pytest.fixture(scope='session')
