@@ -91,7 +91,6 @@ class BlockchainGateway(object):
         Helper function to update the local state with freshly downloaded global state.
         """
         self.state.extend(filtered_diffs)
-        # self.state = global_state_wrapper.get(TxEnum.MESSAGES.name, {})
     
     def _listen(self, callback: Callable, 
                 event_filter: Callable) -> Tuple[Callable, Callable]:
@@ -103,9 +102,9 @@ class BlockchainGateway(object):
         Else, returns the arguments it was passed.
         """
         global_state_wrapper = get_global_state(self._host, self._port, self._timeout)
-        filtered_diffs = filter_diffs(global_state_wrapper, self.state, event_filter)
+        state_diffs, filtered_diffs = filter_diffs(global_state_wrapper, self.state, event_filter)
         # return filtered_diffs
-        self._update_local_state(filtered_diffs)
+        self._update_local_state(state_diffs)
         if filtered_diffs:
             return callback(filtered_diffs)
         else:
