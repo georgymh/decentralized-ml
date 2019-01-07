@@ -70,9 +70,10 @@ class BlockchainGateway(object):
     def reset(self) -> None:
         """
         Reset the gateway
+        This causes the Scheduler/Runners to no longer influence the Gateway's state
         """
         self.event = Event()
-        self.state = []
+        self.state = Manager().list()
         logging.info("Gateway reset!")
     
     def state_append(self, set_element):
@@ -85,11 +86,12 @@ class BlockchainGateway(object):
         self.state.append(set_element)
     # Private methods to manage listening
 
-    def _update_local_state(self, global_state_wrapper: dict) -> None:
+    def _update_local_state(self, filtered_diffs: list) -> None:
         """
         Helper function to update the local state with freshly downloaded global state.
         """
-        self.state = global_state_wrapper.get(TxEnum.MESSAGES.name, {})
+        self.state.extend(filtered_diffs)
+        # self.state = global_state_wrapper.get(TxEnum.MESSAGES.name, {})
     
     def _listen(self, callback: Callable, 
                 event_filter: Callable) -> Tuple[Callable, Callable]:
@@ -102,7 +104,8 @@ class BlockchainGateway(object):
         """
         global_state_wrapper = get_global_state(self._host, self._port, self._timeout)
         filtered_diffs = filter_diffs(global_state_wrapper, self.state, event_filter)
-        self._update_local_state(global_state_wrapper)
+        # return filtered_diffs
+        self._update_local_state(filtered_diffs)
         if filtered_diffs:
             return callback(filtered_diffs)
         else:

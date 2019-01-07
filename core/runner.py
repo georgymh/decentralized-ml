@@ -57,14 +57,17 @@ class DMLRunner(object):
             JobTypes.JOB_AVG.name: self._average,
             JobTypes.JOB_COMM.name: self._communicate,
         }
+        self.JOBS_NEEDING_STATE = {
+            JobTypes.JOB_COMM.name: self._communicate,
+        }
     
     def configure(self, ipfs_client):
         """
-        Sets up IPFS client and blockchain_state for _communicate
+        Sets up IPFS client for _communicate
         """
         self._client = ipfs_client
 
-    def run_job(self, job, state):
+    def run_job(self, job, state=None):
         """
         Identifies a DMLJob type and executes it.
 
@@ -78,7 +81,10 @@ class DMLRunner(object):
             self.JOB_CALLBACKS,
         )
         try:
-            results = callback(job, state)
+            if job.job_type in self.JOBS_NEEDING_STATE:
+                results = callback(job, state)
+            else:
+                results = callback(job)
         except Exception as e:
             logging.error("RunnerError: " + str(e))
             results = DMLResult(
@@ -104,7 +110,7 @@ class DMLRunner(object):
                             )
         return train_path, test_path
 
-    def _train(self, job, state=None):
+    def _train(self, job):
         """
         Trains the specified machine learning model on all the local data,
         starting from the initial model state specified, until a stopping
@@ -233,7 +239,7 @@ class DMLRunner(object):
         )
         return results
 
-    def _initialize(self, job, state=None):
+    def _initialize(self, job):
         """
         Initializes and returns a DMLResult with the model
         weights as specified in the model.
@@ -277,7 +283,7 @@ class DMLRunner(object):
         )
         return results
 
-    def _split_data(self, job, state):
+    def _split_data(self, job):
         """
         Takes in a job, which should have the raw filepath assigned.
 

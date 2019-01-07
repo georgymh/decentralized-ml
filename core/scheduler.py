@@ -146,7 +146,7 @@ class DMLScheduler(object):
 				logging.info("Running job for real...")
 				self.current_results[i] = self.pool.apply_async(
 					runner.run_job,
-					(job_to_run,self._blockchain_state)
+					(job_to_run,self._blockchain_state,)
 				)
 
 	def _runners_run_next_jobs_as_event(self, period_in_mins):
