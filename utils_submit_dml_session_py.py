@@ -5,18 +5,25 @@ import requests
 
 import ipfsapi
 
-from tests.testing_utils import serialize_job, make_initialize_job, make_model_json
+from tests.testing_utils import make_serialized_job
 
-serialized_job = serialize_job(make_initialize_job(make_model_json()))
-mnist_uuid = 'd16c6e86-d103-4e71-8741-ee1f888d206c'
-mnist_uuid_2 = '0fcf9cbb-39df-4ad6-9042-a64c87fecfb3'
+serialized_job = make_serialized_job("bleh")
+serialized_job["job_data"]["hyperparams"]["batch_size"] = 32
+serialized_job["job_data"]["hyperparams"]["epochs"] = 100
+# client one corresponds to artifacts/integration/configuration.ini
+# client one corresponds to tests/artifacts/integration
+# client two corresponds to artifacts/integration/configuration2.ini
+# client two corresponds to tests/artifacts/datasets
+mnist_uuid = '0fcf9cbb-39df-4ad6-9042-a64c87fecfb3'
+mnist_uuid_2 = 'd16c6e86-d103-4e71-8741-ee1f888d206c'
 new_session_key = {"dataset_uuid": mnist_uuid, "label_column_name": "label"}
 new_session_key_2 = {"dataset_uuid": mnist_uuid_2, "label_column_name": "label"}
 new_session_event = {
-        "optimizer_params": {"num_averages_per_round": 0, "max_rounds": 10},
+        "optimizer_params": {"num_averages_per_round": 0, "max_rounds": 5},
         "serialized_job": serialized_job,
-        "participants": ['0fcf9cbb-39df-4ad6-9042-a64c87fecfb3', 
-                        'd16c6e86-d103-4e71-8741-ee1f888d206c']
+        "participants": [mnist_uuid]
+        # "participants": ['0fcf9cbb-39df-4ad6-9042-a64c87fecfb3', 
+        #                 'd16c6e86-d103-4e71-8741-ee1f888d206c']
 }
 
 client = ipfsapi.connect('127.0.0.1', 5001)
