@@ -138,9 +138,7 @@ def setter(client: object, key: str, port: int, value: object, flag: bool = Fals
     except Exception as e:
         logging.info("HTTP POST error, got: {0}".format(e))
     if state_append != False:
-        logging.info("State before append: {}".format(state_append))
         state_append.append(tx.get_tx())
-        logging.info("State after append: {}".format(state_append))
     return tx_receipt.text
 
 ##############################################################################

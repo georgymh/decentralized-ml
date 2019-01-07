@@ -31,7 +31,11 @@ def bootstrap():
         # logging.info("IPFS daemon not started, got: {0}".format(e))
         raise(e)
     # 2. Set up Database Client.
-    db_client = DBClient(config_manager)
+    db_client = None
+    try:
+        db_client = DBClient(config_manager)
+    except Exception as e:
+        pass
     # 2. Set up Dataset Manager.
     dataset_manager = DatasetManager(
         config_manager=config_manager
@@ -70,7 +74,8 @@ def bootstrap():
     # 6. Set up Blockchain Gateway and start listening on a new thread.
     blockchain_gateway.configure(config_manager=config_manager,
         communication_manager=communication_manager,
-        ipfs_client=client)
+        ipfs_client=client,
+        dataset_manager=dataset_manager)
     t2 = threading.Thread(
         target=blockchain_gateway.start_cron,
         args=(0.05,),

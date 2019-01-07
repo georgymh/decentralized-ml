@@ -43,11 +43,11 @@ def ipfs_client(config_manager):
 
 @pytest.fixture(scope='session')
 def mnist_uuid():
-    return 'd16c6e86-d103-4e71-8741-ee1f888d206c'
+    return '0fcf9cbb-39df-4ad6-9042-a64c87fecfb3'
 
 @pytest.fixture(scope='session')
 def mnist_uuid_two():
-    return '0fcf9cbb-39df-4ad6-9042-a64c87fecfb3'
+    return 'd16c6e86-d103-4e71-8741-ee1f888d206c'
 
 @pytest.fixture(scope='session')
 def transformed_filepath():
@@ -65,13 +65,10 @@ def cleanup(transformed_filepath):
 def new_session_event(mnist_uuid):
     serialized_job = serialize_job(make_initialize_job(make_model_json()))
     new_session_event = {
-        # TxEnum.KEY.name: None,
-        # TxEnum.CONTENT.name: {
             "optimizer_params": {"num_averages_per_round": 1, "max_rounds": 2},
             "serialized_job": serialized_job,
             "participants": ['0fcf9cbb-39df-4ad6-9042-a64c87fecfb3', 
                             'd16c6e86-d103-4e71-8741-ee1f888d206c']
-        # }
     }
     return new_session_event
 
@@ -89,10 +86,12 @@ def dataset_manager(config_manager):
     dataset_manager.bootstrap()
     return dataset_manager
 
-def setup_client(config_manager, client, dataset_manager):
+def setup_client(config_manager, client):
     """
     Set up and return communication_manager, blockchain_gateway, scheduler
     """
+    dataset_manager = DatasetManager(config_manager)
+    dataset_manager.bootstrap()
     communication_manager = CommunicationManager()
     blockchain_gateway = BlockchainGateway()
     blockchain_gateway.configure(
@@ -114,14 +113,14 @@ def setup_client(config_manager, client, dataset_manager):
     return communication_manager, blockchain_gateway, scheduler
 
 def test_federated_learning_two_clients_automated(new_session_event, new_session_key, new_session_key_two, 
-    config_manager_two, config_manager, ipfs_client, dataset_manager):
+    config_manager_two, config_manager, ipfs_client):
     """
     Tests fully automated federated learning.
     """
     # Set up first client
-    communication_manager, blockchain_gateway, scheduler = setup_client(config_manager, ipfs_client, dataset_manager)
+    communication_manager, blockchain_gateway, scheduler = setup_client(config_manager, ipfs_client)
     # Set up second client
-    communication_manager_2, blockchain_gateway_2, scheduler_2 = setup_client(config_manager_two, ipfs_client, dataset_manager)
+    communication_manager_2, blockchain_gateway_2, scheduler_2 = setup_client(config_manager_two, ipfs_client)
     # (0) Someone sends decentralized learning event to the chain
     tx_receipt = setter(
         client=blockchain_gateway._client,
@@ -159,7 +158,7 @@ def test_federated_learning_two_clients_automated(new_session_event, new_session
     assert communication_manager_2.optimizer is None
 
 def test_federated_learning_two_clients_manual(new_session_event, new_session_key, new_session_key_two, 
-    config_manager_two, config_manager, ipfs_client, dataset_manager):    
+    config_manager_two, config_manager, ipfs_client):    
     """
     Integration test that checks that one round of federated learning can be
     COMPLETED with max_rounds = 2, num_averages_per_round = 2
@@ -168,9 +167,9 @@ def test_federated_learning_two_clients_manual(new_session_event, new_session_ke
 
     """
     # Set up first client
-    communication_manager, blockchain_gateway, scheduler = setup_client(config_manager, ipfs_client, dataset_manager)
+    communication_manager, blockchain_gateway, scheduler = setup_client(config_manager, ipfs_client)
     # Set up second client
-    communication_manager_2, blockchain_gateway_2, scheduler_2 = setup_client(config_manager_two, ipfs_client, dataset_manager)
+    communication_manager_2, blockchain_gateway_2, scheduler_2 = setup_client(config_manager_two, ipfs_client)
     # (0) Someone sends decentralized learning event to the chain
     tx_receipt = setter(
         client=blockchain_gateway._client,
@@ -291,7 +290,7 @@ def test_communication_manager_integration(new_session_event, new_session_key, c
     NOTE: Timeout errors can be as a result of Runners repeatedly erroring. Check logs for this.
     """
     communication_manager, blockchain_gateway, scheduler = setup_client(
-        config_manager, ipfs_client, dataset_manager)
+        config_manager, ipfs_client)
     nested_dict = {
         TxEnum.KEY.name: new_session_key,
         TxEnum.CONTENT.name: new_session_event
@@ -304,7 +303,6 @@ def test_communication_manager_integration(new_session_event, new_session_key, c
         RawEventTypes.NEW_MESSAGE.name,
         args
     )
-    
     assert communication_manager.optimizer.job.job_type == JobTypes.JOB_INIT.name or \
         communication_manager.optimizer.job.job_type == JobTypes.JOB_SPLIT.name, \
         "Should be ready to init or transform_split!"
