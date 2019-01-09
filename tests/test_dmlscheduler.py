@@ -41,18 +41,18 @@ class MockCommunicationManager:
     def configure(self, scheduler, dataset_manager):
         pass
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def communication_manager():
     communication_manager = MockCommunicationManager()
     return communication_manager
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def blockchain_gateway(config_manager, ipfs_client, communication_manager, dataset_manager):
     blockchain_gateway = BlockchainGateway()
     blockchain_gateway.configure(config_manager, communication_manager, ipfs_client, dataset_manager)
     return blockchain_gateway
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def dataset_manager(config_manager):
     dataset_manager = DatasetManager(config_manager)
     dataset_manager.bootstrap()

@@ -129,7 +129,7 @@ def test_federated_learning_two_clients_automated(new_session_event, new_session
         value=new_session_event, 
         flag=True
     )
-    tx_receipt = setter(
+    tx_receipt_two = setter(
         client=blockchain_gateway._client,
         key=new_session_key_two, 
         port=blockchain_gateway._port,
@@ -137,6 +137,7 @@ def test_federated_learning_two_clients_automated(new_session_event, new_session
         flag=True
     )
     assert tx_receipt
+    assert tx_receipt_two
     scheduler.start_cron(period_in_mins=0.01)
     scheduler_2.start_cron(period_in_mins=0.01)
     blockchain_gateway.start_cron(period_in_mins=0.01)
@@ -178,7 +179,7 @@ def test_federated_learning_two_clients_manual(new_session_event, new_session_ke
         value=new_session_event, 
         flag=True
     )
-    tx_receipt = setter(
+    tx_receipt_two = setter(
         client=blockchain_gateway._client,
         key=new_session_key_two, 
         port=blockchain_gateway._port,
@@ -186,6 +187,7 @@ def test_federated_learning_two_clients_manual(new_session_event, new_session_ke
         flag=True
     )
     assert tx_receipt
+    assert tx_receipt_two
     # (1) Gateway_1 listens for the event
     blockchain_gateway._listen(blockchain_gateway._handle_new_session_creation, 
         blockchain_gateway._filter_new_session)
@@ -205,10 +207,10 @@ def test_federated_learning_two_clients_manual(new_session_event, new_session_ke
         time.sleep(5)
     assert len(scheduler.processed) == 4, "Jobs failed/not completed in time!"
     assert len(scheduler_2.processed) == 4, "Jobs failed/not completed in time!"
-    # (4) Gateway_1 listens for the new weights and hears only 2's weights
+    # (4) Gateway_1 listens for the new weights and hears only Gateway_2's weights
     blockchain_gateway._listen(blockchain_gateway._handle_new_session_info,
         blockchain_gateway._filter_new_session_info)
-    # (6) Gateway_2 listens for the new weights and hears only 1's weights
+    # (6) Gateway_2 listens for the new weights and hears only Gateway_1's weights
     blockchain_gateway_2._listen(blockchain_gateway_2._handle_new_session_info,
         blockchain_gateway_2._filter_new_session_info)
     # (8) Scheduler_1 and Scheduler_2 runs the following jobs:
@@ -223,10 +225,10 @@ def test_federated_learning_two_clients_manual(new_session_event, new_session_ke
         "Jobs {} failed/not completed in time!".format([
             result.job.job_type for result in scheduler.processed])
     assert len(scheduler_2.processed) == 7, "Jobs failed/not completed in time!"
-    # (4) Gateway_1 listens for the new weights and hears only 2's weights
+    # (4) Gateway_1 listens for the new weights and hears only Gateway_2's weights
     blockchain_gateway._listen(blockchain_gateway._handle_new_session_info,
         blockchain_gateway._filter_new_session_info)
-    # (6) Gateway_2 listens for the new weights and hears only 1's weights
+    # (6) Gateway_2 listens for the new weights and hears only Gateway_1's weights
     blockchain_gateway_2._listen(blockchain_gateway_2._handle_new_session_info,
         blockchain_gateway_2._filter_new_session_info)
     # (13) Optimizer tells Communication Manager to schedule JOB_AVG
@@ -350,27 +352,6 @@ def test_communication_manager_integration(new_session_event, new_session_key, c
         scheduler.runners_run_next_jobs()
         time.sleep(0.1)
     assert len(scheduler.processed) == 5, "Averaging failed/not completed in time!"
-    # we've only heard one set of new weights so our listen_iters are 1
-    # assert communication_manager.optimizer.curr_averages_this_round == 1, \
-    #     "Should have only listened once!"
-    # # now the communication manager should be idle
-    # scheduler.runners_run_next_jobs()
-    # time.sleep(0.1)
-    # assert len(scheduler.processed) == 5, "No job should have been run!"
-    # # now it should hear more new weights
-    # communication_manager.inform(
-    #     RawEventTypes.NEW_MESSAGE.name,
-    #     new_weights_event
-    # )
-    # assert communication_manager.optimizer.job.job_type == JobTypes.JOB_AVG.name, \
-    #     "Should be ready to average!"
-    # timeout = time.time() + 3
-    # while time.time() < timeout and len(scheduler.processed) == 5:
-    #     # second averaging job
-    #     scheduler.runners_run_next_jobs()
-    #     time.sleep(0.1)
-    # assert len(scheduler.processed) == 6, "Averaging failed/not completed in time!"
-    # # we've heard both sets of new weights so our listen_iters are 2
     assert communication_manager.optimizer.curr_averages_this_round == 0, \
         "Either did not hear anything, or heard too much!"
     # now we should be ready to train

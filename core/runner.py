@@ -57,9 +57,7 @@ class DMLRunner(object):
             JobTypes.JOB_AVG.name: self._average,
             JobTypes.JOB_COMM.name: self._communicate,
         }
-        self.JOBS_NEEDING_STATE = {
-            JobTypes.JOB_COMM.name: self._communicate,
-        }
+        self.JOBS_NEEDING_STATE = [JobTypes.JOB_COMM.name]
     
     def configure(self, ipfs_client):
         """
