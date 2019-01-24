@@ -24,7 +24,8 @@ class DMLJob(object):
         uuid=None,
         raw_filepath=None,
         session_filepath=None,
-        datapoint_count=None
+        datapoint_count=None,
+        round_num=None,
         ):
         """
         Initializes a DML Job object.
@@ -68,6 +69,7 @@ class DMLJob(object):
         self.raw_filepath = raw_filepath
         self.session_filepath = session_filepath
         self.datapoint_count = datapoint_count
+        self.round_num = round_num
     
     def copy_constructor(self):
         newjob = deepcopy(self)
@@ -96,6 +98,7 @@ def serialize_job(dmljob_obj):
         'datapoint_count': dmljob_obj.datapoint_count,
         'omega': dmljob_obj.omega,
         'sigma_omega': dmljob_obj.sigma_omega,
+        'round_num': dmljob_obj.round_num,
     }
     weights = None
     if dmljob_obj.weights:
@@ -129,7 +132,7 @@ def deserialize_job(serialized_job):
         rest['uuid'],
         rest['raw_filepath'],
         rest['session_filepath'],
-        rest['datapoint_count']
+        rest['datapoint_count'],
     )
     job.omega = rest['omega']
     job.sigma_omega = rest['sigma_omega']

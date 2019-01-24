@@ -127,14 +127,16 @@ def test_federated_learning_two_clients_automated(new_session_event, new_session
         key=new_session_key, 
         port=blockchain_gateway._port,
         value=new_session_event, 
-        flag=True
+        flag=True,
+        round_num=0
     )
     tx_receipt_two = setter(
         client=blockchain_gateway._client,
         key=new_session_key_two, 
         port=blockchain_gateway._port,
         value=new_session_event, 
-        flag=True
+        flag=True,
+        round_num=0
     )
     assert tx_receipt
     assert tx_receipt_two
@@ -177,14 +179,16 @@ def test_federated_learning_two_clients_manual(new_session_event, new_session_ke
         key=new_session_key, 
         port=blockchain_gateway._port,
         value=new_session_event, 
-        flag=True
+        flag=True,
+        round_num=0
     )
     tx_receipt_two = setter(
         client=blockchain_gateway._client,
         key=new_session_key_two, 
         port=blockchain_gateway._port,
         value=new_session_event, 
-        flag=True
+        flag=True,
+        round_num=0
     )
     assert tx_receipt
     assert tx_receipt_two

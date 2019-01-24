@@ -44,6 +44,8 @@ def ipfs_to_content(client: object, ipfs_hash: str) -> object:
 def content_to_ipfs(client: object, content: dict) -> str:
     """
     Helper function to deploy a Python object onto IPFS, returns an IPFS hash
+    # TODO: Figure out how to calculate the multihash without actually pushing
+    the object to IPFS. This is possible with 'ipfs add -n' via CLI.
     """
     return client.add_json(content)
 

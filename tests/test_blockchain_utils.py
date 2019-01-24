@@ -87,5 +87,5 @@ def test_blockchain_utils_setter_multiple_values(config, ipfs_client):
         port=config.getint('BLOCKCHAIN', 'http_port'),
         timeout=config.getint('BLOCKCHAIN', 'timeout')
     )
-    assert get_val_after == get_val_before + [TEST_VALUE], \
+    assert get_val_after == get_val_before + [TEST_VALUE, TEST_VALUE], \
         "Multi-setter failed!"

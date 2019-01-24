@@ -136,7 +136,7 @@ class BlockchainGateway(object):
             value = tx.get(TxEnum.CONTENT.name)
             args = Transaction(MessageEventTypes.NEW_SESSION.name,
                                 Transaction(ipfs_to_content(self._client, key),
-                                            ipfs_to_content(self._client, value), 0),
+                                            ipfs_to_content(self._client, value), 0).get_tx(),
                                 0).get_tx()
             self.communication_manager.inform(RawEventTypes.NEW_MESSAGE.name, args)
         list(map(handler, txs))
@@ -148,7 +148,7 @@ class BlockchainGateway(object):
         """
         try:
             key_dict = ipfs_to_content(self._client, tx.get(TxEnum.KEY.name))
-            return self._dataset_manager.validate_key(key_dict["dataset_uuid"])
+            return self._dataset_manager.validate_key(key_dict["dataset_uuid"]) and tx.get(TxEnum.ROUND.name) == 0
         except:
             return False
 
@@ -156,7 +156,7 @@ class BlockchainGateway(object):
         """
         Only allows new-session-info transactions through.
         """
-        return tx.get(TxEnum.KEY.name) != tx.get(TxEnum.CONTENT.name)
+        return tx.get(TxEnum.ROUND.name) > 0
 
     def _handle_new_session_info(self, txs: list) -> Tuple[Callable, Callable]:
         """
