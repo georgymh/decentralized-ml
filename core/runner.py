@@ -267,7 +267,7 @@ class DMLRunner(object):
         assert job.round_num, "Nonzero round number is needed for this message!"
         tx_receipt = setter(
             client=self._client,
-            key = content_to_ipfs(self._client, job.key),
+            key = content_to_ipfs(self._client, serialize_weights(job.key)),
             port = self._port,
             value = serialize_job(job),
             round_num = job.round_num,
