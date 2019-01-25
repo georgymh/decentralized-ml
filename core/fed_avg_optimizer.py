@@ -59,7 +59,6 @@ class FederatedAveragingOptimizer(object):
 		max_rounds(int): how many rounds of fed learning this optimizer wants to do
 		"""
 		logging.info("Setting up Optimizer...")
-		# initialization_payload = initialization_payload.get_tx()
 		data_provider_info = initialization_payload.get(TxEnum.KEY.name)
 		job_info = initialization_payload.get(TxEnum.CONTENT.name)
 		serialized_job = job_info.get('serialized_job')

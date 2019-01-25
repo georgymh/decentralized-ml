@@ -55,6 +55,7 @@ class DMLJob(object):
             sigma_omega (float): the sum of omega's incorporated into weighted
                                 averaging so far. Kept in the DMLJob to allow the
                                 weighted average to be unrolled.
+            round_num (int): the index of the round in DML which this job is for
         """
         self.job_type = job_type
         self.serialized_model = serialized_model
