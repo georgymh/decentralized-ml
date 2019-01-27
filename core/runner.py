@@ -283,6 +283,11 @@ class DMLRunner(object):
         )
         return results
 
+    def _post_statistics(self, job):
+        """
+        Posts statistics about a training job to a cloud server
+        """
+        assert job.statistics, "No statistics to be served"
     def _split_data(self, job):
         """
         Takes in a job, which should have the raw filepath assigned.
