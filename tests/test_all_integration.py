@@ -142,9 +142,9 @@ def test_federated_learning_two_clients_automated(new_session_event, new_session
     scheduler_2.start_cron(period_in_mins=0.01)
     blockchain_gateway.start_cron(period_in_mins=0.01)
     blockchain_gateway_2.start_cron(period_in_mins=0.01)
-    timeout = 44 + time.time()
+    timeout = 50 + time.time()
     while time.time() < timeout and (len(scheduler.processed) != 8 or len(scheduler_2.processed) != 8):
-        time.sleep(3)
+        time.sleep(1)
     scheduler.stop_cron()
     scheduler_2.stop_cron()
     blockchain_gateway.stop_cron()
