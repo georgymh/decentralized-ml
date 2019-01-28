@@ -3,8 +3,8 @@ import time
 
 from core.utils.enums 					import ActionableEventTypes, RawEventTypes, MessageEventTypes
 from core.utils.enums 					import JobTypes, callback_handler_no_default
-from core.utils.dmljob 					import deserialize_job, DMLJob
-from core.utils.keras 					import serialize_weights
+from core.utils.dmljob 					import deserialize_job, DMLJob, DMLAverageJob, DMLCommunicateJob, DMLInitializeJob, DMLSplitJob, DMLTrainJob, DMLValidateJob
+from core.utils.keras 					import serialize_weights, deserialize_weights
 from core.utils.dmlresult 				import DMLResult
 from core.blockchain.blockchain_utils	import TxEnum, content_to_ipfs
 
@@ -62,15 +62,19 @@ class FederatedAveragingOptimizer(object):
 		data_provider_info = initialization_payload.get(TxEnum.KEY.name)
 		job_info = initialization_payload.get(TxEnum.CONTENT.name)
 		serialized_job = job_info.get('serialized_job')
-		self.job = deserialize_job(serialized_job)
-		self.job.uuid = data_provider_info.get("dataset_uuid")
-		self.job.label_column_name = data_provider_info.get("label_column_name")
-		assert self.job.uuid, "uuid of job not set!"
-		assert dataset_manager.validate_key(self.job.uuid), "uuid not found in mappings"
-		self.job.raw_filepath = dataset_manager.get_mappings()[self.job.uuid]
+		self.job_data = {}
+		self.job_data["dataset_uuid"] = data_provider_info.get("dataset_uuid")
+		self.job_data["framework_type"] = serialized_job.get("framework_type")
+		self.job_data["serialized_model"] = serialized_job.get("serialized_model")
+		self.job_data["hyperparams"] = serialized_job.get("hyperparams")
+		# self.job = deserialize_job(serialized_job)
+		# self.job_data["uuid = data_provider_info.get("dataset_uuid")
+		self.job_data["label_column_name"] = data_provider_info.get("label_column_name")
+		assert dataset_manager.validate_key(self.job_data["dataset_uuid"]), "uuid not found in mappings"
+		self.job_data["raw_filepath"] = dataset_manager.get_mappings()[self.job_data["dataset_uuid"]]
 		optimizer_params = job_info.get('optimizer_params')
 		self.curr_averages_this_round = 0
-		self.job.sigma_omega = 0
+		self.job_data["sigma_omega"] = 0
 		self.num_averages_per_round = optimizer_params.get('num_averages_per_round')
 		self.curr_round = 1
 		self.max_rounds = optimizer_params.get('max_rounds')
@@ -79,7 +83,7 @@ class FederatedAveragingOptimizer(object):
 		# it's expected to hear messages from for future session_info messages
 		participants = job_info.get('participants')
 		self.other_participants = [participant for participant in participants
-									if participant != self.job.uuid]
+									if participant != self.job_data["dataset_uuid"]]
 		self.LEVEL1_CALLBACKS = {
 			RawEventTypes.JOB_DONE.name: self._handle_job_done,
 			RawEventTypes.NEW_MESSAGE.name: self._handle_new_info,
@@ -107,11 +111,13 @@ class FederatedAveragingOptimizer(object):
 		randomly initializes the model.
 		"""
 		job_arr = []
-		job_one = self.job.copy_constructor()
-		job_one.job_type = JobTypes.JOB_INIT.name
+		init_job = DMLInitializeJob(framework_type=self.job_data["framework_type"],
+									serialized_model=self.job_data["serialized_model"])
+		job_one = DMLJob(job_type=JobTypes.JOB_INIT.name, specific_job=init_job)
 		job_arr.append(job_one)
-		job_two = self.job.copy_constructor()
-		job_two.job_type = JobTypes.JOB_SPLIT.name
+		split_job = DMLSplitJob(hyperparams=self.job_data["hyperparams"],
+								raw_filepath=self.job_data["raw_filepath"])
+		job_two = DMLJob(job_type=JobTypes.JOB_SPLIT.name, specific_job=split_job)
 		job_arr.append(job_two)
 		return ActionableEventTypes.SCHEDULE_JOBS.name, job_arr
 
@@ -147,9 +153,19 @@ class FederatedAveragingOptimizer(object):
 		self._update_weights(new_weights)
 		self._update_old_weights()
 		if self.initialization_complete:
-			return ActionableEventTypes.SCHEDULE_JOBS.name, [self.job]
+			train_job = DMLTrainJob(
+				datapoint_count=self.job_data["datapoint_count"],
+				hyperparams=self.job_data["hyperparams"],
+				label_column_name=self.job_data["label_column_name"],
+				framework_type=self.job_data["framework_type"],
+				serialized_model=self.job_data["serialized_model"],
+				weights=self.job_data["weights"],
+				session_filepath=self.job_data["session_filepath"]
+			)
+			new_job = DMLJob(job_type=JobTypes.JOB_TRAIN.name,
+								specific_job=train_job)
+			return ActionableEventTypes.SCHEDULE_JOBS.name, [new_job]
 		else:
-			self.job.job_type = JobTypes.JOB_TRAIN.name
 			self.initialization_complete = True
 			return ActionableEventTypes.NOTHING.name, None
 
@@ -159,12 +175,22 @@ class FederatedAveragingOptimizer(object):
 		Returns a DML Job of type train unless initialization is not yet done
 		and modifies the current state of the job.
 		"""
-		self.job.session_filepath = dmlresult_obj.results['session_filepath']
-		self.job.datapoint_count = dmlresult_obj.results['datapoint_count']
+		self.job_data["session_filepath"] = dmlresult_obj.results['session_filepath']
+		self.job_data["datapoint_count"] = dmlresult_obj.results['datapoint_count']
 		if self.initialization_complete:
-			return ActionableEventTypes.SCHEDULE_JOBS.name, [self.job]
+			train_job = DMLTrainJob(
+				datapoint_count=self.job_data["datapoint_count"],
+				hyperparams=self.job_data["hyperparams"],
+				label_column_name=self.job_data["label_column_name"],
+				framework_type=self.job_data["framework_type"],
+				serialized_model=self.job_data["serialized_model"],
+				weights=self.job_data["weights"],
+				session_filepath=self.job_data["session_filepath"]
+			)
+			new_job = DMLJob(job_type=JobTypes.JOB_TRAIN.name,
+								specific_job=train_job)
+			return ActionableEventTypes.SCHEDULE_JOBS.name, [new_job]
 		else:
-			self.job.job_type = JobTypes.JOB_TRAIN.name
 			self.initialization_complete = True
 			return ActionableEventTypes.NOTHING.name, None
 
@@ -178,15 +204,22 @@ class FederatedAveragingOptimizer(object):
 		weights.
 		"""
 		new_weights = dmlresult_obj.results.get('weights')
-		self.job.omega = dmlresult_obj.results.get('omega')
+		self.job_data["omega"] = dmlresult_obj.results.get('omega')
 		# if we don't have sigma_omega yet, we will now
-		self.job.sigma_omega = self.job.omega + self.job.sigma_omega
+		self.job_data["sigma_omega"] = self.job_data["omega"] + self.job_data["sigma_omega"]
 		# TODO: Key validation in next PR
-		self.job.key = self.old_weights
 		self._update_weights(new_weights)
-		self.job.job_type = JobTypes.JOB_COMM.name
-		self.job.round_num = self.curr_round
-		return ActionableEventTypes.SCHEDULE_JOBS.name, [self.job]
+		self.job_data["job_type"] = JobTypes.JOB_COMM.name
+		self.job_data["round_num"] = self.curr_round
+		comm_job = DMLCommunicateJob(
+			round_num=self.curr_round,
+			key=self.old_weights,
+			weights=self.job_data["weights"],
+			omega=self.job_data["omega"],
+			sigma_omega=self.job_data["sigma_omega"]
+		)
+		new_job = DMLJob(job_type=JobTypes.JOB_COMM.name, specific_job=comm_job)
+		return ActionableEventTypes.SCHEDULE_JOBS.name, [new_job]
 
 	def _done_communicating(self, dmlresult_obj):
 		"""
@@ -195,37 +228,56 @@ class FederatedAveragingOptimizer(object):
 		if self.num_averages_per_round:
 			return ActionableEventTypes.NOTHING.name, None
 		# else continue training, don't need to wait to hear new weights
-		self.job.job_type = JobTypes.JOB_TRAIN.name
-		return ActionableEventTypes.SCHEDULE_JOBS.name, [self.job]
+		train_job = DMLTrainJob(
+			datapoint_count=self.job_data["datapoint_count"],
+			hyperparams=self.job_data["hyperparams"],
+			label_column_name=self.job_data["label_column_name"],
+			framework_type=self.job_data["framework_type"],
+			serialized_model=self.job_data["serialized_model"],
+			weights=self.job_data["weights"],
+			session_filepath=self.job_data["session_filepath"]
+		)
+		new_job = DMLJob(job_type=JobTypes.JOB_TRAIN.name,
+							specific_job=train_job)
+		return ActionableEventTypes.SCHEDULE_JOBS.name, [new_job]
 	
 	def _done_averaging(self, dmlresult_obj):
 		new_weights = dmlresult_obj.results.get('weights')
 		self._update_weights(new_weights)
 		# Update our memory of the weights we've seen
-		self.job.sigma_omega = max(self.job.sigma_omega, dmlresult_obj.job.sigma_omega) + dmlresult_obj.job.omega
+		self.job_data["sigma_omega"] = max(self.job_data["sigma_omega"], dmlresult_obj.job.sigma_omega) + dmlresult_obj.job.omega
 		self.curr_averages_this_round += 1
 		if self.curr_averages_this_round >= self.num_averages_per_round:
 			logging.info("DONE WITH ROUND {} OF FEDERATED LEARNING!".format(self.curr_round))
-			self.job.job_type = JobTypes.JOB_TRAIN.name
 			self.curr_averages_this_round = 0
 			# Reset everything for new round of learning
 			self._update_old_weights()
-			self.job.sigma_omega = 0
+			self.job_data["sigma_omega"] = 0
 			self.curr_round += 1
-			self.job.round_num += 1
 			if self.curr_round > self.max_rounds:
 				# validate how good my end model was
-				# self.job.job_type = JobTypes.JOB_VAL.name
+				# self.job_data["job_type = JobTypes.JOB_VAL.name
 				# return ActionableEventTypes.SCHEDULE_JOBS, self.job 
-				return ActionableEventTypes.TERMINATE.name, self.job
+				return ActionableEventTypes.TERMINATE.name, None
 			else:
-				return ActionableEventTypes.SCHEDULE_JOBS.name, [self.job]
+				train_job = DMLTrainJob(
+					datapoint_count=self.job_data["datapoint_count"],
+					hyperparams=self.job_data["hyperparams"],
+					label_column_name=self.job_data["label_column_name"],
+					framework_type=self.job_data["framework_type"],
+					serialized_model=self.job_data["serialized_model"],
+					weights=self.job_data["weights"],
+					session_filepath=self.job_data["session_filepath"]
+				)
+				new_job = DMLJob(job_type=JobTypes.JOB_TRAIN.name,
+									specific_job=train_job)
+				return ActionableEventTypes.SCHEDULE_JOBS.name, [new_job]
 		else:
 			return ActionableEventTypes.NOTHING.name, None
 
 	def _done_validating(self, dmlresult_obj):
 		logging.info("Validation accuracy: {}".format(dmlresult_obj.results['val_stats']))
-		return ActionableEventTypes.TERMINATE.name, self.job
+		return ActionableEventTypes.TERMINATE.name, None
 	# Handlers for new information from the gateway
 
 	def _handle_new_info(self, payload):
@@ -250,12 +302,16 @@ class FederatedAveragingOptimizer(object):
 		logging.info("Received new weights!")
 		# wait until we have sigma_omega of our own
 		# TODO: ?????
-		received_job = deserialize_job(payload[TxEnum.CONTENT.name])
-		self.job.job_type = JobTypes.JOB_AVG.name
-		self.job.omega = received_job.omega
-		self.job.sigma_omega += received_job.sigma_omega if not self.job.sigma_omega else self.job.sigma_omega
-		self.job.new_weights = received_job.weights
-		return ActionableEventTypes.SCHEDULE_JOBS.name, [self.job]
+		received_info = payload[TxEnum.CONTENT.name]
+		self.job_data["sigma_omega"] += received_info["sigma_omega"] if not self.job_data["sigma_omega"] else self.job_data["sigma_omega"]
+		avg_job = DMLAverageJob(
+			omega=received_info["omega"],
+			sigma_omega=self.job_data["sigma_omega"],
+			weights=self.job_data["weights"],
+			new_weights=received_info["weights"]
+		)
+		new_job = DMLJob(job_type=JobTypes.JOB_AVG.name, specific_job=avg_job)
+		return ActionableEventTypes.SCHEDULE_JOBS.name, [new_job]
 
 	def _received_termination(self, payload):
 		"""
@@ -272,13 +328,13 @@ class FederatedAveragingOptimizer(object):
 		stored DML Job, therefore ensuring that any future DML Jobs will operate
 		with the correct weights. Mutates, does not return anything.
 		"""
-		self.job.weights = weights
+		self.job_data["weights"] = weights
 
 	def _update_old_weights(self):
 		"""
 		Helper function to update the old_weights instance variable.
 		"""
-		self.old_weights = self.job.weights
+		self.old_weights = self.job_data["weights"]
 
 	def _do_nothing(self, payload):
 		"""
