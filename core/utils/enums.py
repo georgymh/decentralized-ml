@@ -21,6 +21,8 @@ class JobTypes(Enum):
         to rest of the nodes via blockchain.
 
         JOB_SPLIT: Split the data and put it into new folders.
+
+        JOB_STATS: Submit statistics to a cloud server
         #TODO: Implement transformation of the data
     """
     JOB_TRAIN = "TRAIN"
@@ -29,6 +31,7 @@ class JobTypes(Enum):
     JOB_AVG = "AVERAGE"
     JOB_COMM = "COMMUNICATE"
     JOB_SPLIT = "SPLIT"
+    JOB_STATS = "STATISTICS"
 
 class MessageEventTypes(Enum):
     """

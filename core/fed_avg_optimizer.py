@@ -3,7 +3,7 @@ import time
 
 from core.utils.enums 					import ActionableEventTypes, RawEventTypes, MessageEventTypes
 from core.utils.enums 					import JobTypes, callback_handler_no_default
-from core.utils.dmljob 					import deserialize_job, DMLJob, DMLAverageJob, DMLCommunicateJob, DMLInitializeJob, DMLSplitJob, DMLTrainJob, DMLValidateJob
+from core.utils.dmljob 					import deserialize_job, DMLJob, DMLAverageJob, DMLCommunicateJob, DMLInitializeJob, DMLSplitJob, DMLTrainJob, DMLValidateJob, DMLServerJob
 from core.utils.keras 					import serialize_weights, deserialize_weights
 from core.utils.dmlresult 				import DMLResult
 from core.blockchain.blockchain_utils	import TxEnum, content_to_ipfs
@@ -64,6 +64,7 @@ class FederatedAveragingOptimizer(object):
 		serialized_job = job_info.get('serialized_job')
 		self.job_data = {}
 		self.job_data["dataset_uuid"] = data_provider_info.get("dataset_uuid")
+		self.job_data["uuid"] = 
 		self.job_data["framework_type"] = serialized_job.get("framework_type")
 		self.job_data["serialized_model"] = serialized_job.get("serialized_model")
 		self.job_data["hyperparams"] = serialized_job.get("hyperparams")
@@ -219,7 +220,9 @@ class FederatedAveragingOptimizer(object):
 			sigma_omega=self.job_data["sigma_omega"]
 		)
 		new_job = DMLJob(job_type=JobTypes.JOB_COMM.name, specific_job=comm_job)
-		return ActionableEventTypes.SCHEDULE_JOBS.name, [new_job]
+		second_job = DMLServerJob(uuid = self.job_data["uuid"], 
+								statistics=dmlresult_obj.results.get('train_stats'))
+		return ActionableEventTypes.SCHEDULE_JOBS.name, [new_job, second_job]
 
 	def _done_communicating(self, dmlresult_obj):
 		"""

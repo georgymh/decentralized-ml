@@ -288,6 +288,17 @@ class DMLRunner(object):
         Posts statistics about a training job to a cloud server
         """
         assert job.statistics, "No statistics to be served"
+        server_url = "http://{0}:{1}/stats".format(self.server_url, job.uuid)
+        tx_receipt = requests.post(server_url, json=job.statistics)
+        tx_receipt.raise_for_status()
+        results = DMLResult(
+            status='successful',
+            job=job,
+            results={'receipt': tx_receipt},
+            error_message="",
+        )
+        return tx_receipt
+
     def _split_data(self, job):
         """
         Takes in a job, which should have the raw filepath assigned.

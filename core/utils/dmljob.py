@@ -219,6 +219,31 @@ class DMLAverageJob(object):
         self.sigma_omega = sigma_omega
         self.new_weights = new_weights
 
+class DMLServerJob(object):
+    """
+    DML Job for submitting Statistics
+
+    Holds information specifically needed for submitting statistics
+
+    """
+
+    def __init__(
+        self,
+        uuid,
+        statistics
+        ):
+        """
+        Initializes a DML Server Job object.
+
+        Args:
+            uuid (str): uuid of the job for the server to identify.
+            statistics (dict): statistics about the training process which just
+                                finished, to be sent to the server
+        """
+        self.job_type = JobTypes.JOB_STATS.name
+        self.uuid = uuid
+        self.statistics = statistics
+
 class DMLJob(object):
     """
     DML Job
