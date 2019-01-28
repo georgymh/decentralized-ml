@@ -303,10 +303,9 @@ class FederatedAveragingOptimizer(object):
 		# wait until we have sigma_omega of our own
 		# TODO: ?????
 		received_info = payload[TxEnum.CONTENT.name]
-		job_data = received_info["job_data"]
-		self.job_data["sigma_omega"] += job_data["sigma_omega"] if not self.job_data["sigma_omega"] else self.job_data["sigma_omega"]
+		self.job_data["sigma_omega"] += received_info["sigma_omega"] if not self.job_data["sigma_omega"] else self.job_data["sigma_omega"]
 		avg_job = DMLAverageJob(
-			omega=job_data["omega"],
+			omega=received_info["omega"],
 			sigma_omega=self.job_data["sigma_omega"],
 			weights=self.job_data["weights"],
 			new_weights=received_info["weights"]

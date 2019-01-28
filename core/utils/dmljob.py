@@ -151,15 +151,12 @@ class DMLCommunicateJob(object):
         Returns:
             dict: The serialized version of the DML Job.
         """
-        rest = {
-            'job_type': self.job_type,
-            'omega': self.omega,
-            'sigma_omega': self.sigma_omega,
-        }
         weights = serialize_weights(self.weights)
         return {
             'weights': weights,
-            'job_data': rest,
+            'job_type': self.job_type,
+            'omega': self.omega,
+            'sigma_omega': self.sigma_omega,
         }
 
 class DMLSplitJob(object):
