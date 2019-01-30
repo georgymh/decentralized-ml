@@ -88,10 +88,10 @@ def make_serialized_job():
     }
     return serialized_job
 
-def make_serialized_job_with_uuid(uuid):
-    initialize_job = make_initialize_job(uuid=uuid)
-    serialized_job = initialize_job.serialize_job()
-    return serialized_job
+# def make_serialized_job_with_uuid(uuid):
+#     initialize_job = make_initialize_job(uuid=uuid)
+#     serialized_job = initialize_job.serialize_job()
+#     return serialized_job
 
 def make_validate_job(new_weights, \
     session_filepath, datapoint_count):

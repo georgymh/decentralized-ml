@@ -16,7 +16,6 @@ from core.utils.keras import train_keras_model, validate_keras_model
 
 from core.utils.keras import serialize_weights, deserialize_weights
 from core.utils.dmlresult import DMLResult
-from core.utils.dmljob import serialize_job
 from core.utils.enums import JobTypes, callback_handler_no_default
 from core.blockchain.blockchain_utils import setter, content_to_ipfs
 
