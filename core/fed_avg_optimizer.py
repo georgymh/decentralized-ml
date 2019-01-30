@@ -3,7 +3,7 @@ import time
 
 from core.utils.enums 					import ActionableEventTypes, RawEventTypes, MessageEventTypes
 from core.utils.enums 					import JobTypes, callback_handler_no_default
-from core.utils.dmljob 					import (deserialize_job, DMLJob, DMLAverageJob, DMLCommunicateJob, \
+from core.utils.dmljob 					import (DMLJob, DMLAverageJob, DMLCommunicateJob, \
 												DMLInitializeJob, DMLSplitJob, DMLTrainJob, DMLValidateJob)
 from core.utils.keras 					import serialize_weights, deserialize_weights
 from core.utils.dmlresult 				import DMLResult
