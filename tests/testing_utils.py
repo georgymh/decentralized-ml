@@ -1,7 +1,9 @@
 from models.keras_perceptron    import KerasPerceptron
 from custom.keras               import get_optimizer
 from core.utils.enums           import JobTypes, RawEventTypes
-from core.utils.dmljob          import DMLJob, serialize_job, DMLCommunicateJob, DMLAverageJob, DMLInitializeJob, DMLSplitJob, DMLTrainJob, DMLValidateJob
+from core.utils.dmljob          import (DMLJob, DMLCommunicateJob, \
+                                        DMLAverageJob, DMLInitializeJob, DMLSplitJob, \
+                                        DMLTrainJob, DMLValidateJob)
 from data.iterators             import count_datapoints
 
 def make_dataset_path():
@@ -88,7 +90,7 @@ def make_serialized_job():
 
 def make_serialized_job_with_uuid(uuid):
     initialize_job = make_initialize_job(uuid=uuid)
-    serialized_job = serialize_job(initialize_job)
+    serialized_job = initialize_job.serialize_job()
     return serialized_job
 
 def make_validate_job(new_weights, \

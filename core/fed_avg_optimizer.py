@@ -3,7 +3,8 @@ import time
 
 from core.utils.enums 					import ActionableEventTypes, RawEventTypes, MessageEventTypes
 from core.utils.enums 					import JobTypes, callback_handler_no_default
-from core.utils.dmljob 					import deserialize_job, DMLJob, DMLAverageJob, DMLCommunicateJob, DMLInitializeJob, DMLSplitJob, DMLTrainJob, DMLValidateJob
+from core.utils.dmljob 					import (deserialize_job, DMLJob, DMLAverageJob, DMLCommunicateJob, \
+												DMLInitializeJob, DMLSplitJob, DMLTrainJob, DMLValidateJob)
 from core.utils.keras 					import serialize_weights, deserialize_weights
 from core.utils.dmlresult 				import DMLResult
 from core.blockchain.blockchain_utils	import TxEnum, content_to_ipfs
@@ -67,8 +68,6 @@ class FederatedAveragingOptimizer(object):
 		self.job_data["framework_type"] = serialized_job.get("framework_type")
 		self.job_data["serialized_model"] = serialized_job.get("serialized_model")
 		self.job_data["hyperparams"] = serialized_job.get("hyperparams")
-		# self.job = deserialize_job(serialized_job)
-		# self.job_data["uuid = data_provider_info.get("dataset_uuid")
 		self.job_data["label_column_name"] = data_provider_info.get("label_column_name")
 		assert dataset_manager.validate_key(self.job_data["dataset_uuid"]), "uuid not found in mappings"
 		self.job_data["raw_filepath"] = dataset_manager.get_mappings()[self.job_data["dataset_uuid"]]

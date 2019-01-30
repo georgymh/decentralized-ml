@@ -13,7 +13,6 @@ from tests.testing_utils                import make_serialized_job
 from core.utils.enums                   import RawEventTypes, JobTypes, MessageEventTypes
 from core.utils.keras                   import serialize_weights
 from core.blockchain.blockchain_utils   import TxEnum
-from core.utils.dmljob                  import deserialize_job
 from core.dataset_manager               import DatasetManager
 
 
