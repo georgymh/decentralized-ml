@@ -92,7 +92,7 @@ def init_dmlresult_obj(runner, small_filepath):
 @pytest.fixture(scope='session')
 def split_dmlresult_obj(runner, mnist_filepath):
     split_job = make_split_job(mnist_filepath,)
-    split_job.specific_job.hyperparams['split'] = 0.75
+    split_job.hyperparams['split'] = 0.75
     job_results = runner.run_job(split_job)
     return job_results
 

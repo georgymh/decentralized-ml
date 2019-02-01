@@ -79,9 +79,9 @@ class DMLRunner(object):
         )
         try:
             if job.job_type in self.JOBS_NEEDING_STATE:
-                results = callback(job.specific_job, state)
+                results = callback(job, state)
             else:
-                results = callback(job.specific_job)
+                results = callback(job)
         except Exception as e:
             logging.error("RunnerError: " + str(e))
             results = DMLResult(

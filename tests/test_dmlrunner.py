@@ -84,7 +84,7 @@ def init_dmlresult_obj(runner, small_filepath):
 @pytest.fixture(scope='session')
 def split_dmlresult_obj(runner, mnist_filepath):
     split_job = make_split_job(mnist_filepath,)
-    split_job.specific_job.hyperparams['split'] = 0.75
+    split_job.hyperparams['split'] = 0.75
     job_results = runner.run_job(split_job)
     return job_results
 
@@ -145,7 +145,7 @@ def test_dmlrunner_initialize_job_returns_list_of_nparray(init_dmlresult_obj):
 def test_dmlrunner_transform_and_split( \
         runner, small_filepath):
     split_job = make_split_job(small_filepath)
-    split_job.specific_job.hyperparams['split'] = 0.75
+    split_job.hyperparams['split'] = 0.75
     job_results = runner.run_job(split_job)
     session_filepath = job_results.results['session_filepath']
     assert os.path.isdir(session_filepath), \
@@ -175,7 +175,7 @@ def test_dmlrunner_train_job_returns_weights_omega_and_stats( \
 def test_dmlrunner_same_train_job_with_split_1( \
         runner, mnist_filepath):
     split_job = make_split_job(mnist_filepath)
-    split_job.specific_job.hyperparams['split'] = 1
+    split_job.hyperparams['split'] = 1
     job_results = runner.run_job(split_job)
     session_filepath = job_results.results['session_filepath']
     datapoint_count = job_results.results['datapoint_count']
@@ -212,7 +212,7 @@ def test_dmlrunner_validate_job_returns_stats( \
                     session_filepath,
                     datapoint_count
                 )
-    validate_job.specific_job.hyperparams['split'] = 1 - validate_job.specific_job.hyperparams['split']
+    validate_job.hyperparams['split'] = 1 - validate_job.hyperparams['split']
     result = runner.run_job(validate_job)
     assert result.status == 'successful'
     results = result.results

@@ -4,7 +4,35 @@ import numpy as np
 from core.utils.keras import serialize_weights, deserialize_weights
 from core.utils.enums import JobTypes
 
-class DMLTrainJob(object):
+class DMLJob(object):
+    """
+    DML Job
+
+    This class represents a generic job that the Scheduler and Runners can
+    execute. The job has some information that every job_type needs, but the
+    rest of the information is stored in type-specific job objects.
+
+    """
+
+    def __init__(
+        self,
+        job_type        ):
+        """
+        Initializes a DML Job object.
+
+        Args:
+            job_type (str): the job type.
+        """
+        self.job_type = job_type
+    
+    def copy_constructor(self):
+        newjob = deepcopy(self)
+        return newjob
+    
+    def serialize_job(self):
+        return self.__dict__
+
+class DMLTrainJob(DMLJob):
     """
     DML Job for Training
 
@@ -48,7 +76,7 @@ class DMLTrainJob(object):
         self.weights = weights
         self.session_filepath = session_filepath
 
-class DMLValidateJob(object):
+class DMLValidateJob(DMLJob):
     """
     DML Job for Validation
 
@@ -92,7 +120,7 @@ class DMLValidateJob(object):
         self.weights = weights
         self.session_filepath = session_filepath
 
-class DMLInitializeJob(object):
+class DMLInitializeJob(DMLJob):
     """
     DML Job for Initialization
 
@@ -128,7 +156,7 @@ class DMLInitializeJob(object):
             'framework_type': self.framework_type,
         }
 
-class DMLCommunicateJob(object):
+class DMLCommunicateJob(DMLJob):
     """
     DML Job for Communication
 
@@ -172,7 +200,7 @@ class DMLCommunicateJob(object):
             'sigma_omega': self.sigma_omega,
         }
 
-class DMLSplitJob(object):
+class DMLSplitJob(DMLJob):
     """
     DML Job for Splitting Data
 
@@ -199,7 +227,7 @@ class DMLSplitJob(object):
         self.hyperparams = hyperparams
         self.raw_filepath = raw_filepath
 
-class DMLAverageJob(object):
+class DMLAverageJob(DMLJob):
     """
     DML Job for Averaging
 
@@ -231,32 +259,3 @@ class DMLAverageJob(object):
         self.omega = omega
         self.sigma_omega = sigma_omega
         self.new_weights = new_weights
-
-class DMLJob(object):
-    """
-    DML Job
-
-    This class represents a generic job that the Scheduler and Runners can
-    execute. The job has some information that every job_type needs, but the
-    rest of the information is stored in type-specific job objects.
-
-    """
-
-    def __init__(
-        self,
-        job_type,
-        specific_job
-        ):
-        """
-        Initializes a DML Job object.
-
-        Args:
-            job_type (str): the job type.
-            specific_job (obj): the specific job container class
-        """
-        self.job_type = job_type
-        self.specific_job = specific_job
-    
-    def copy_constructor(self):
-        newjob = deepcopy(self)
-        return newjob
