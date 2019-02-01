@@ -15,7 +15,7 @@ from core.utils.enums           import JobTypes
 from tests.testing_utils        import make_initialize_job, make_communicate_job
 from tests.testing_utils        import make_train_job, make_validate_job
 from tests.testing_utils        import make_split_job
-from core.utils.dmljob          import DMLAverageJob
+from core.utils.dmljob          import DMLAverageJob, DMLServerJob, DMLJob
 from core.blockchain.blockchain_gateway import BlockchainGateway
 from core.blockchain.blockchain_utils   import setter
 
@@ -113,9 +113,16 @@ def runner(config_manager, ipfs_client):
     runner.configure(ipfs_client=ipfs_client)
     return runner
 
-def test_dmlrunner_uniform_initialization(config_manager, ipfs_client):
-    runner = DMLRunner(config_manager)
-    runner.configure(ipfs_client)
+def test_dmlrunner_status_server_post(runner, train_dmlresult_obj):
+    server_job = DMLServerJob(uuid = "pandata", 
+                            statistics=train_dmlresult_obj.results.get('train_stats'),
+                            dataset_uuid = "sucks",
+                            round_num = 40)
+    job_to_run = DMLJob(job_type=JobTypes.JOB_STATS, specific_job=server_job)
+    result = runner.run_job(job_to_run)
+    assert result['receipt'] == 'success', 'POST failed!'
+
+def test_dmlrunner_uniform_initialization(runner):
     initialize_job = make_initialize_job(small_filepath)
     result = runner.run_job(initialize_job).results
     first_weights = result['weights']
