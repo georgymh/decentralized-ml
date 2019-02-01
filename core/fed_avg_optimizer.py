@@ -213,6 +213,7 @@ class FederatedAveragingOptimizer(object):
 		self.job_data["job_type"] = JobTypes.JOB_COMM.name
 		self.job_data["round_num"] = self.curr_round
 		comm_job = DMLCommunicateJob(
+			# TODO: Consider synchronization issues
 			round_num=self.curr_round,
 			key=self.old_weights,
 			weights=self.job_data["weights"],
@@ -220,8 +221,11 @@ class FederatedAveragingOptimizer(object):
 			sigma_omega=self.job_data["sigma_omega"]
 		)
 		new_job = DMLJob(job_type=JobTypes.JOB_COMM.name, specific_job=comm_job)
-		second_job = DMLServerJob(uuid = self.job_data["uuid"], 
-								statistics=dmlresult_obj.results.get('train_stats'))
+		server_job = DMLServerJob(uuid = self.job_data["uuid"], 
+								statistics=dmlresult_obj.results.get('train_stats'),
+								dataset_uuid = self.job_data["dataset_uuid"],
+								round_num = self.curr_round)
+		second_job = DMLJob(job_type=JobTypes.JOB_STATS, specific_job=server_job)
 		return ActionableEventTypes.SCHEDULE_JOBS.name, [new_job, second_job]
 
 	def _done_communicating(self, dmlresult_obj):

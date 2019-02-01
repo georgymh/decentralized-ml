@@ -230,6 +230,8 @@ class DMLServerJob(object):
     def __init__(
         self,
         uuid,
+        dataset_uuid,
+        round_num,
         statistics
         ):
         """
@@ -242,6 +244,8 @@ class DMLServerJob(object):
         """
         self.job_type = JobTypes.JOB_STATS.name
         self.uuid = uuid
+        self.dataset_uuid = dataset_uuid
+        self.round_num = round_num
         self.statistics = statistics
 
 class DMLJob(object):

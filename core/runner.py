@@ -6,6 +6,8 @@ import os
 import ipfsapi
 import pandas as pd
 import numpy as np
+import requests
+import json
 
 from core.configuration import ConfigurationManager
 from custom.keras import model_from_serialized, get_optimizer
@@ -288,16 +290,23 @@ class DMLRunner(object):
         Posts statistics about a training job to a cloud server
         """
         assert job.statistics, "No statistics to be served"
-        server_url = "http://{0}:{1}/stats".format(self.server_url, job.uuid)
-        tx_receipt = requests.post(server_url, json=job.statistics)
-        tx_receipt.raise_for_status()
+        server_url = "http://status-server.jn6tkty4uh.us-west-1.elasticbeanstalk.com/jobs/{0}/{1}".format(job.uuid, job.dataset_uuid)
+        response = requests.post(
+            url=server_url,
+            headers={'content-type': 'application/json'},
+            json={
+                'round_num': job.round_num,
+                'dataset_stats': job.statistics
+            }
+        )
+        response_dict = json.loads(response.text)
         results = DMLResult(
             status='successful',
             job=job,
-            results={'receipt': tx_receipt},
+            results={'receipt': response_dict['status']},
             error_message="",
         )
-        return tx_receipt
+        return results
 
     def _split_data(self, job):
         """
