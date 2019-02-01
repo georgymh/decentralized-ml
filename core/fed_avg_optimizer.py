@@ -225,7 +225,7 @@ class FederatedAveragingOptimizer(object):
 								statistics=dmlresult_obj.results.get('train_stats'),
 								dataset_uuid = self.job_data["dataset_uuid"],
 								round_num = self.curr_round)
-		second_job = DMLJob(job_type=JobTypes.JOB_STATS, specific_job=server_job)
+		second_job = DMLJob(job_type=JobTypes.JOB_STATS.name, specific_job=server_job)
 		return ActionableEventTypes.SCHEDULE_JOBS.name, [new_job, second_job]
 
 	def _done_communicating(self, dmlresult_obj):

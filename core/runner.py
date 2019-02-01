@@ -58,6 +58,7 @@ class DMLRunner(object):
             JobTypes.JOB_SPLIT.name: self._split_data,
             JobTypes.JOB_AVG.name: self._average,
             JobTypes.JOB_COMM.name: self._communicate,
+            JobTypes.JOB_STATS.name: self._post_statistics
         }
         self.JOBS_NEEDING_STATE = [JobTypes.JOB_COMM.name]
     

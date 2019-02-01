@@ -118,8 +118,8 @@ def test_dmlrunner_status_server_post(runner, train_dmlresult_obj):
                             statistics=train_dmlresult_obj.results.get('train_stats'),
                             dataset_uuid = "sucks",
                             round_num = 40)
-    job_to_run = DMLJob(job_type=JobTypes.JOB_STATS, specific_job=server_job)
-    result = runner.run_job(job_to_run)
+    job_to_run = DMLJob(job_type=JobTypes.JOB_STATS.name, specific_job=server_job)
+    result = runner.run_job(job_to_run).results
     assert result['receipt'] == 'success', 'POST failed!'
 
 def test_dmlrunner_uniform_initialization(runner):
