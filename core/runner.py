@@ -18,7 +18,6 @@ from core.utils.keras import train_keras_model, validate_keras_model
 
 from core.utils.keras import serialize_weights, deserialize_weights
 from core.utils.dmlresult import DMLResult
-from core.utils.dmljob import serialize_job
 from core.utils.enums import JobTypes, callback_handler_no_default
 from core.blockchain.blockchain_utils import setter, content_to_ipfs
 
@@ -83,9 +82,9 @@ class DMLRunner(object):
         )
         try:
             if job.job_type in self.JOBS_NEEDING_STATE:
-                results = callback(job.specific_job, state)
+                results = callback(job, state)
             else:
-                results = callback(job.specific_job)
+                results = callback(job)
         except Exception as e:
             logging.error("RunnerError: " + str(e))
             results = DMLResult(

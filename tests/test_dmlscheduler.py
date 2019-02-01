@@ -7,12 +7,13 @@ import pytest
 import numpy as np
 import ipfsapi
 
-from core.scheduler             import DMLScheduler
-from core.configuration         import ConfigurationManager
+from core.scheduler                     import DMLScheduler
+from core.configuration                 import ConfigurationManager
 from core.blockchain.blockchain_gateway import BlockchainGateway
-from core.communication_manager import CommunicationManager
-from core.dataset_manager       import DatasetManager
-from tests.testing_utils        import make_initialize_job, make_split_job, make_communicate_job
+from core.communication_manager         import CommunicationManager
+from core.dataset_manager               import DatasetManager
+from tests.testing_utils                import (make_initialize_job, make_split_job, \
+                                                make_communicate_job)
 
 @pytest.fixture(scope='session')
 def config_manager():

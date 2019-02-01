@@ -1,7 +1,9 @@
 from models.keras_perceptron    import KerasPerceptron
 from custom.keras               import get_optimizer
 from core.utils.enums           import JobTypes, RawEventTypes
-from core.utils.dmljob          import DMLJob, serialize_job, DMLCommunicateJob, DMLAverageJob, DMLInitializeJob, DMLSplitJob, DMLTrainJob, DMLValidateJob
+from core.utils.dmljob          import (DMLCommunicateJob, \
+                                        DMLAverageJob, DMLInitializeJob, DMLSplitJob, \
+                                        DMLTrainJob, DMLValidateJob)
 from data.iterators             import count_datapoints
 
 def make_dataset_path():
@@ -15,11 +17,7 @@ def make_communicate_job(key, weights):
         omega=1.0,
         sigma_omega=1.0
     )
-    communicate_job = DMLJob(
-        JobTypes.JOB_COMM.name,
-        job
-    )
-    return communicate_job
+    return job
 
 def _make_model_json():
     m = KerasPerceptron(is_training=True)
@@ -36,22 +34,14 @@ def make_initialize_job(raw_filepath=None, uuid=None):
         framework_type="keras",
         serialized_model=_make_model_json()
     )
-    initialize_job = DMLJob(
-        JobTypes.JOB_INIT.name,
-        job
-    )
-    return initialize_job
+    return job
 
 def make_split_job(raw_filepath):
     job = DMLSplitJob(
         hyperparams=_make_hyperparams(),
         raw_filepath=raw_filepath
     )
-    split_job = DMLJob(
-        JobTypes.JOB_SPLIT.name,
-        job
-    )
-    return split_job
+    return job
 
 def _make_hyperparams(split=0.004):
     hyperparams = {
@@ -72,11 +62,7 @@ def make_train_job(initial_weights, session_filepath, datapoint_count):
         weights=initial_weights,
         session_filepath=session_filepath
     )
-    train_job = DMLJob(
-        JobTypes.JOB_TRAIN.name,
-        job
-    )
-    return train_job
+    return job
 
 def make_serialized_job():
     serialized_job = {
@@ -86,10 +72,10 @@ def make_serialized_job():
     }
     return serialized_job
 
-def make_serialized_job_with_uuid(uuid):
-    initialize_job = make_initialize_job(uuid=uuid)
-    serialized_job = serialize_job(initialize_job)
-    return serialized_job
+# def make_serialized_job_with_uuid(uuid):
+#     initialize_job = make_initialize_job(uuid=uuid)
+#     serialized_job = initialize_job.serialize_job()
+#     return serialized_job
 
 def make_validate_job(new_weights, \
     session_filepath, datapoint_count):
@@ -102,8 +88,4 @@ def make_validate_job(new_weights, \
         weights=new_weights,
         session_filepath=session_filepath
     )
-    validate_job = DMLJob(
-        JobTypes.JOB_VAL.name,
-        job
-    )
-    return validate_job
+    return job

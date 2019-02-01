@@ -3,7 +3,8 @@ import time
 
 from core.utils.enums 					import ActionableEventTypes, RawEventTypes, MessageEventTypes
 from core.utils.enums 					import JobTypes, callback_handler_no_default
-from core.utils.dmljob 					import deserialize_job, DMLJob, DMLAverageJob, DMLCommunicateJob, DMLInitializeJob, DMLSplitJob, DMLTrainJob, DMLValidateJob, DMLServerJob
+from core.utils.dmljob 					import (DMLJob, DMLAverageJob, DMLCommunicateJob, DMLServerJob, \
+												DMLInitializeJob, DMLSplitJob, DMLTrainJob, DMLValidateJob)
 from core.utils.keras 					import serialize_weights, deserialize_weights
 from core.utils.dmlresult 				import DMLResult
 from core.blockchain.blockchain_utils	import TxEnum, content_to_ipfs
@@ -64,12 +65,9 @@ class FederatedAveragingOptimizer(object):
 		serialized_job = job_info.get('serialized_job')
 		self.job_data = {}
 		self.job_data["dataset_uuid"] = data_provider_info.get("dataset_uuid")
-		self.job_data["uuid"] = 
 		self.job_data["framework_type"] = serialized_job.get("framework_type")
 		self.job_data["serialized_model"] = serialized_job.get("serialized_model")
 		self.job_data["hyperparams"] = serialized_job.get("hyperparams")
-		# self.job = deserialize_job(serialized_job)
-		# self.job_data["uuid = data_provider_info.get("dataset_uuid")
 		self.job_data["label_column_name"] = data_provider_info.get("label_column_name")
 		assert dataset_manager.validate_key(self.job_data["dataset_uuid"]), "uuid not found in mappings"
 		self.job_data["raw_filepath"] = dataset_manager.get_mappings()[self.job_data["dataset_uuid"]]
@@ -114,12 +112,10 @@ class FederatedAveragingOptimizer(object):
 		job_arr = []
 		init_job = DMLInitializeJob(framework_type=self.job_data["framework_type"],
 									serialized_model=self.job_data["serialized_model"])
-		job_one = DMLJob(job_type=JobTypes.JOB_INIT.name, specific_job=init_job)
-		job_arr.append(job_one)
+		job_arr.append(init_job)
 		split_job = DMLSplitJob(hyperparams=self.job_data["hyperparams"],
 								raw_filepath=self.job_data["raw_filepath"])
-		job_two = DMLJob(job_type=JobTypes.JOB_SPLIT.name, specific_job=split_job)
-		job_arr.append(job_two)
+		job_arr.append(split_job)
 		return ActionableEventTypes.SCHEDULE_JOBS.name, job_arr
 
 	def ask(self, event_type, payload):
@@ -163,9 +159,7 @@ class FederatedAveragingOptimizer(object):
 				weights=self.job_data["weights"],
 				session_filepath=self.job_data["session_filepath"]
 			)
-			new_job = DMLJob(job_type=JobTypes.JOB_TRAIN.name,
-								specific_job=train_job)
-			return ActionableEventTypes.SCHEDULE_JOBS.name, [new_job]
+			return ActionableEventTypes.SCHEDULE_JOBS.name, [train_job]
 		else:
 			self.initialization_complete = True
 			return ActionableEventTypes.NOTHING.name, None
@@ -188,9 +182,7 @@ class FederatedAveragingOptimizer(object):
 				weights=self.job_data["weights"],
 				session_filepath=self.job_data["session_filepath"]
 			)
-			new_job = DMLJob(job_type=JobTypes.JOB_TRAIN.name,
-								specific_job=train_job)
-			return ActionableEventTypes.SCHEDULE_JOBS.name, [new_job]
+			return ActionableEventTypes.SCHEDULE_JOBS.name, [train_job]
 		else:
 			self.initialization_complete = True
 			return ActionableEventTypes.NOTHING.name, None
@@ -220,13 +212,7 @@ class FederatedAveragingOptimizer(object):
 			omega=self.job_data["omega"],
 			sigma_omega=self.job_data["sigma_omega"]
 		)
-		new_job = DMLJob(job_type=JobTypes.JOB_COMM.name, specific_job=comm_job)
-		server_job = DMLServerJob(uuid = self.job_data["uuid"], 
-								statistics=dmlresult_obj.results.get('train_stats'),
-								dataset_uuid = self.job_data["dataset_uuid"],
-								round_num = self.curr_round)
-		second_job = DMLJob(job_type=JobTypes.JOB_STATS.name, specific_job=server_job)
-		return ActionableEventTypes.SCHEDULE_JOBS.name, [new_job, second_job]
+		return ActionableEventTypes.SCHEDULE_JOBS.name, [comm_job]
 
 	def _done_communicating(self, dmlresult_obj):
 		"""
@@ -244,9 +230,7 @@ class FederatedAveragingOptimizer(object):
 			weights=self.job_data["weights"],
 			session_filepath=self.job_data["session_filepath"]
 		)
-		new_job = DMLJob(job_type=JobTypes.JOB_TRAIN.name,
-							specific_job=train_job)
-		return ActionableEventTypes.SCHEDULE_JOBS.name, [new_job]
+		return ActionableEventTypes.SCHEDULE_JOBS.name, [train_job]
 	
 	def _done_averaging(self, dmlresult_obj):
 		new_weights = dmlresult_obj.results.get('weights')
@@ -276,9 +260,7 @@ class FederatedAveragingOptimizer(object):
 					weights=self.job_data["weights"],
 					session_filepath=self.job_data["session_filepath"]
 				)
-				new_job = DMLJob(job_type=JobTypes.JOB_TRAIN.name,
-									specific_job=train_job)
-				return ActionableEventTypes.SCHEDULE_JOBS.name, [new_job]
+				return ActionableEventTypes.SCHEDULE_JOBS.name, [train_job]
 		else:
 			return ActionableEventTypes.NOTHING.name, None
 
@@ -317,8 +299,7 @@ class FederatedAveragingOptimizer(object):
 			weights=self.job_data["weights"],
 			new_weights=received_info["weights"]
 		)
-		new_job = DMLJob(job_type=JobTypes.JOB_AVG.name, specific_job=avg_job)
-		return ActionableEventTypes.SCHEDULE_JOBS.name, [new_job]
+		return ActionableEventTypes.SCHEDULE_JOBS.name, [avg_job]
 
 	def _received_termination(self, payload):
 		"""
