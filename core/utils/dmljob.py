@@ -271,7 +271,7 @@ class DMLServerJob(DMLJob):
 
     def __init__(
         self,
-        uuid,
+        job_uuid,
         dataset_uuid,
         round_num,
         statistics
@@ -285,7 +285,7 @@ class DMLServerJob(DMLJob):
                                 finished, to be sent to the server
         """
         self.job_type = JobTypes.JOB_STATS.name
-        self.uuid = uuid
+        self.job_uuid = job_uuid
         self.dataset_uuid = dataset_uuid
         self.round_num = round_num
         self.statistics = statistics

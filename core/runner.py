@@ -291,7 +291,7 @@ class DMLRunner(object):
         Posts statistics about a training job to a cloud server
         """
         assert job.statistics, "No statistics to be served"
-        server_url = "{0}/{1}/{2}".format(self._server_url, job.uuid, job.dataset_uuid)
+        server_url = "{0}/{1}/{2}".format(self._server_url, job.job_uuid, job.dataset_uuid)
         response = requests.post(
             url=server_url,
             headers={'content-type': 'application/json'},

@@ -64,7 +64,7 @@ def initialization_payload(small_uuid):
 @pytest.fixture(scope='session')
 def initialization_payload_cloud(small_uuid):
     serialized_job = make_serialized_job()
-    serialized_job["uuid"] = "1234"
+    serialized_job["job_uuid"] = "1234"
     new_session_event = {
         TxEnum.KEY.name: {"dataset_uuid": small_uuid, "label_column_name": "label"},
         TxEnum.CONTENT.name: {

@@ -23,7 +23,8 @@ class CloudConnectedOptimizer(FederatedAveragingOptimizer):
         super().__init__(initialization_payload, dataset_manager)
         job_info = initialization_payload.get(TxEnum.CONTENT.name)
         serialized_job = job_info.get('serialized_job')
-        self.job_data["uuid"] = serialized_job["uuid"]
+        self.job_data["job_uuid"] = serialized_job["job_uuid"]
+    
     def _done_training(self, dmlresult_obj):
         """
 		"LEVEL 2" Callback for a training job that just completed. Returns a
@@ -49,7 +50,7 @@ class CloudConnectedOptimizer(FederatedAveragingOptimizer):
             omega=self.job_data["omega"],
             sigma_omega=self.job_data["sigma_omega"]
         )
-        server_job = DMLServerJob(uuid = self.job_data["uuid"], 
+        server_job = DMLServerJob(job_uuid = self.job_data["job_uuid"], 
                                 statistics=dmlresult_obj.results.get('train_stats'),
                                 dataset_uuid = self.job_data["dataset_uuid"],
                                 round_num = self.curr_round)

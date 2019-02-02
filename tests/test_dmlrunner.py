@@ -114,7 +114,7 @@ def runner(config_manager, ipfs_client):
     return runner
 
 def test_dmlrunner_status_server_post(runner, train_dmlresult_obj):
-    server_job = DMLServerJob(uuid = "pandata", 
+    server_job = DMLServerJob(job_uuid = "pandata", 
                             statistics=train_dmlresult_obj.results.get('train_stats'),
                             dataset_uuid = "sucks",
                             round_num = 40)
