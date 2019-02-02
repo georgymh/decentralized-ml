@@ -12,6 +12,13 @@ from core.fed_avg_optimizer import FederatedAveragingOptimizer
 
 
 class CloudConnectedOptimizer(FederatedAveragingOptimizer):
+    """
+    This is a clone of FedAvgOptimizer, but for two differences.
+    1) This Optimizer requires the job_uuid field to be set in
+    its initialization payload
+    2) When this is finished training, it uploads statistics to
+    a centralized cloud repo
+    """
     def __init__(self, initialization_payload, dataset_manager):
         super().__init__(initialization_payload, dataset_manager)
         job_info = initialization_payload.get(TxEnum.CONTENT.name)
@@ -20,7 +27,7 @@ class CloudConnectedOptimizer(FederatedAveragingOptimizer):
     def _done_training(self, dmlresult_obj):
         """
 		"LEVEL 2" Callback for a training job that just completed. Returns a
-		DML Job of type communication and modifies the current state of the job.
+		DML Job of type communication and uploads to cloud server.
 
 		NOTE: Assumes that the training succeeded. In the future, we may care
 		about a degree of accuracy needing to be reached before updating the

@@ -50,6 +50,7 @@ class DMLRunner(object):
         self.iden = str(uuid.uuid4())[:8]
         self.config = dict(config.items("RUNNER"))
         self._port = config.getint('BLOCKCHAIN', 'http_port')
+        self._server_url = config.get('RUNNER', 'server_url')
         self.JOB_CALLBACKS = {
             JobTypes.JOB_TRAIN.name: self._train,
             JobTypes.JOB_INIT.name: self._initialize,
@@ -290,7 +291,7 @@ class DMLRunner(object):
         Posts statistics about a training job to a cloud server
         """
         assert job.statistics, "No statistics to be served"
-        server_url = "http://status-server.jn6tkty4uh.us-west-1.elasticbeanstalk.com/jobs/{0}/{1}".format(job.uuid, job.dataset_uuid)
+        server_url = "{0}/{1}/{2}".format(self._server_url, job.uuid, job.dataset_uuid)
         response = requests.post(
             url=server_url,
             headers={'content-type': 'application/json'},

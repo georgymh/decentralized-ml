@@ -23,10 +23,6 @@ class FederatedAveragingOptimizer(object):
 	abstraction between routing messages internally and making decisions on
 	what messages to route and to where.
 
-	The Optimizer stores the DML Job throghout the lifecycle of a DML Session,
-	and passes it to the Communication Manager so it can be routed wherever
-	needed.
-
 	This particular optimizer works with callbacks:
 
 		- There are "LEVEL 1" callbacks, which represent the types of Raw Events
