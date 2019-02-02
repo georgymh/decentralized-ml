@@ -36,7 +36,8 @@ class FederatedAveragingOptimizer(object):
 
 	def __init__(self, initialization_payload, dataset_manager):
 		"""
-		Initializes the optimizer.
+		Initializes the basic optimizer, which does not communicate with
+		the status_server or with Explora.
 
 		Expects the `initialization_payload` dict to contain two dicts:
 
